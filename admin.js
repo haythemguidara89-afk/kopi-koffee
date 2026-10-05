@@ -4,6 +4,7 @@
 const ADMIN_PASSWORD = "10699";
 
 let adminFilter = 'all';
+let searchQuery = '';
 let soundEnabled = localStorage.getItem('kopiSoundEnabled') !== 'false';
 let enteredPin = "";
 let lastKnownOrderCount = 0;
@@ -107,6 +108,13 @@ document.addEventListener('DOMContentLoaded', () => {
             checkOrdersPoll();
         }
     }, 2000);
+
+    // Dynamic elapsed time update ticker (every 30 seconds)
+    setInterval(() => {
+        if (sessionStorage.getItem('kopiStaffAuth') === 'true') {
+            updateElapsedTimesInDOM();
+        }
+    }, 30000);
 });
 
 function checkAuthState() {
@@ -149,7 +157,7 @@ function appendPinDigit(digit) {
         enteredPin += digit;
         updatePinDots();
         if (enteredPin.length === 5) {
-            setTimeout(submitCurrentPin, 150);
+            setTimeout(submitCurrentPin, 120);
         }
     }
 }
@@ -178,25 +186,10 @@ function submitCurrentPin() {
     if (enteredPin === ADMIN_PASSWORD) {
         sessionStorage.setItem('kopiStaffAuth', 'true');
         SoundFX.actionSuccess();
-        showToast("Accès autorisé • Bienvenue", "chef");
+        showToast("Accès autorisé • Bienvenue en cuisine", "chef");
         showKDSView();
     } else {
         handleAuthError("Code PIN incorrect. Veuillez réessayer.");
-    }
-}
-
-function submitDirectPassword() {
-    const input = document.getElementById('admin-password-direct');
-    const val = input ? input.value.trim() : '';
-    if (val === ADMIN_PASSWORD) {
-        sessionStorage.setItem('kopiStaffAuth', 'true');
-        if (input) input.value = '';
-        SoundFX.actionSuccess();
-        showToast("Accès autorisé • Bienvenue", "chef");
-        showKDSView();
-    } else {
-        handleAuthError("Mot de passe incorrect.");
-        if (input) input.select();
     }
 }
 
@@ -218,9 +211,6 @@ function setupKeyboardListeners() {
     window.addEventListener('keydown', (e) => {
         const authView = document.getElementById('admin-auth-view');
         if (authView && !authView.classList.contains('hidden')) {
-            if (document.activeElement && document.activeElement.id === 'admin-password-direct') {
-                return;
-            }
             if (e.key >= '0' && e.key <= '9') {
                 appendPinDigit(e.key);
             } else if (e.key === 'Backspace') {
@@ -240,7 +230,8 @@ function startClock() {
     function updateClock() {
         if (!clockEl) return;
         const now = new Date();
-        clockEl.innerText = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+        clockEl.innerText = timeStr;
     }
     updateClock();
     setInterval(updateClock, 1000);
@@ -254,7 +245,12 @@ function setupSoundToggle() {
             soundEnabled = !soundEnabled;
             localStorage.setItem('kopiSoundEnabled', soundEnabled);
             updateSoundButtonUI();
-            if (soundEnabled) SoundFX.actionSuccess();
+            if (soundEnabled) {
+                SoundFX.actionSuccess();
+                showToast("Alertes sonores activées", "bell");
+            } else {
+                showToast("Alertes sonores coupées", "bell-off");
+            }
         });
     }
 }
@@ -269,6 +265,65 @@ function updateSoundButtonUI() {
         btn.classList.remove('sound-on');
         btn.innerHTML = `${getIcon('bell-off')} <span>Son Coupé</span>`;
     }
+}
+
+// Fullscreen Toggle
+function toggleFullscreen() {
+    const iconEl = document.getElementById('fullscreen-icon');
+    const textEl = document.getElementById('fullscreen-text');
+
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+            if (iconEl) iconEl.outerHTML = getIcon('minimize');
+            if (textEl) textEl.innerText = 'Réduire';
+        }).catch(err => {
+            console.warn('Fullscreen error:', err);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen().then(() => {
+                if (iconEl) iconEl.outerHTML = getIcon('fullscreen');
+                if (textEl) textEl.innerText = 'Plein Écran';
+            });
+        }
+    }
+}
+
+// Manual Refresh
+function manualRefreshKDS() {
+    const refreshIcon = document.getElementById('refresh-icon');
+    if (refreshIcon) {
+        refreshIcon.style.transition = 'transform 0.5s ease';
+        refreshIcon.style.transform = 'rotate(360deg)';
+        setTimeout(() => {
+            refreshIcon.style.transform = 'none';
+        }, 500);
+    }
+    renderAdminKDS();
+    showToast("Affichage KDS actualisé", "refresh");
+}
+
+// Search handling
+function handleAdminSearch(val) {
+    searchQuery = (val || '').trim().toLowerCase();
+    const clearBtn = document.getElementById('admin-search-clear');
+    if (clearBtn) {
+        if (searchQuery.length > 0) {
+            clearBtn.classList.remove('hidden');
+        } else {
+            clearBtn.classList.add('hidden');
+        }
+    }
+    renderAdminKDS();
+}
+
+function clearAdminSearch() {
+    const input = document.getElementById('admin-search-input');
+    if (input) input.value = '';
+    searchQuery = '';
+    const clearBtn = document.getElementById('admin-search-clear');
+    if (clearBtn) clearBtn.classList.add('hidden');
+    renderAdminKDS();
 }
 
 // ==========================================================================
@@ -295,37 +350,117 @@ function checkOrdersPoll() {
 }
 
 // ==========================================================================
+// TIME CALCULATION HELPERS
+// ==========================================================================
+function computeElapsedTime(createdAtStr) {
+    if (!createdAtStr) return { text: "Récemment", isUrgent: false };
+    const createdTime = new Date(createdAtStr).getTime();
+    if (isNaN(createdTime)) return { text: "Récemment", isUrgent: false };
+    
+    const now = Date.now();
+    const diffMs = now - createdTime;
+    const diffMins = Math.floor(diffMs / 60000);
+
+    if (diffMins < 1) {
+        return { text: "À l'instant", isUrgent: false };
+    } else if (diffMins === 1) {
+        return { text: "Il y a 1 min", isUrgent: false };
+    } else if (diffMins < 60) {
+        return { text: `Il y a ${diffMins} min`, isUrgent: diffMins >= 15 };
+    } else {
+        const hours = Math.floor(diffMins / 60);
+        const remMins = diffMins % 60;
+        return { text: `Il y a ${hours}h ${remMins}m`, isUrgent: true };
+    }
+}
+
+function updateElapsedTimesInDOM() {
+    document.querySelectorAll('.order-card').forEach(card => {
+        const orderId = card.dataset.orderId;
+        const createdAt = card.dataset.createdAt;
+        const status = card.dataset.status;
+        if (createdAt && status !== 'completed') {
+            const elapsed = computeElapsedTime(createdAt);
+            const badge = card.querySelector('.order-elapsed-badge');
+            if (badge) {
+                badge.innerHTML = `${getIcon('clock')} <span>${elapsed.text}</span>`;
+                if (elapsed.isUrgent) {
+                    badge.classList.add('elapsed-urgent');
+                } else {
+                    badge.classList.remove('elapsed-urgent');
+                }
+            }
+        }
+    });
+}
+
+// ==========================================================================
 // KITCHEN DISPLAY SYSTEM (KDS) RENDERING
 // ==========================================================================
 function renderAdminKDS() {
     const container = document.getElementById('admin-orders-container');
-    const metricActive = document.getElementById('metric-active-orders');
+    const metricPending = document.getElementById('metric-pending-orders');
+    const metricPreparing = document.getElementById('metric-preparing-orders');
     const metricRevenue = document.getElementById('metric-today-revenue');
     const metricItems = document.getElementById('metric-items-prepared');
 
+    const countAll = document.getElementById('count-all');
+    const countPending = document.getElementById('count-pending');
+    const countPreparing = document.getElementById('count-preparing');
+    const countCompleted = document.getElementById('count-completed');
+
     const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
 
-    const activeOrders = orders.filter(o => o.status !== 'completed');
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const totalItems = orders.reduce((sum, o) => sum + o.items.reduce((isum, i) => isum + i.quantity, 0), 0);
+    const pendingOrders = orders.filter(o => o.status === 'pending');
+    const preparingOrders = orders.filter(o => o.status === 'preparing');
+    const completedOrders = orders.filter(o => o.status === 'completed');
 
-    if (metricActive) metricActive.innerText = activeOrders.length;
+    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalItems = orders.reduce((sum, o) => sum + (o.items || []).reduce((isum, i) => isum + (i.quantity || 1), 0), 0);
+
+    // Update Metrics
+    if (metricPending) metricPending.innerText = pendingOrders.length;
+    if (metricPreparing) metricPreparing.innerText = preparingOrders.length;
     if (metricRevenue) metricRevenue.innerText = `${totalRevenue.toFixed(1)} DT`;
     if (metricItems) metricItems.innerText = totalItems;
 
+    // Update Filter Badges
+    if (countAll) countAll.innerText = orders.length;
+    if (countPending) countPending.innerText = pendingOrders.length;
+    if (countPreparing) countPreparing.innerText = preparingOrders.length;
+    if (countCompleted) countCompleted.innerText = completedOrders.length;
+
     if (!container) return;
 
+    // Filter by status tab
     let filteredOrders = orders;
     if (adminFilter !== 'all') {
         filteredOrders = orders.filter(o => o.status === adminFilter);
     }
 
+    // Filter by search query (table, order id, or item name)
+    if (searchQuery.length > 0) {
+        filteredOrders = filteredOrders.filter(o => {
+            const tableMatch = String(o.table || '').toLowerCase().includes(searchQuery);
+            const idMatch = String(o.id || '').toLowerCase().includes(searchQuery);
+            const itemsMatch = (o.items || []).some(item => (item.name || '').toLowerCase().includes(searchQuery));
+            return tableMatch || idMatch || itemsMatch;
+        });
+    }
+
     if (filteredOrders.length === 0) {
+        let emptyTitle = "Aucune commande dans cette section";
+        let emptyDesc = "Toutes les commandes ont été préparées ou la file est vide.";
+        if (searchQuery.length > 0) {
+            emptyTitle = "Aucun résultat pour cette recherche";
+            emptyDesc = `Aucune commande ne correspond à "${searchQuery}".`;
+        }
+
         container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-md); border: 1px dashed var(--gold-border);">
-                <div style="margin-bottom: 12px; color: var(--gold-light);">${getIcon('tray', 'icon-svg-xl')}</div>
-                <h3 style="color: var(--gold-light); font-size: 1.3rem; margin-bottom: 6px;">Aucune commande dans cette section</h3>
-                <p>Toutes les commandes ont été traitées ou aucune commande reçue.</p>
+            <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted); background: linear-gradient(145deg, rgba(17, 26, 40, 0.9), rgba(12, 18, 29, 0.95)); border-radius: var(--radius-md); border: 1px dashed var(--gold-border);">
+                <div style="margin-bottom: 14px; color: var(--gold-light);">${getIcon('tray', 'icon-svg-xl')}</div>
+                <h3 style="color: var(--gold-light); font-size: 1.3rem; margin-bottom: 6px;">${emptyTitle}</h3>
+                <p style="font-size: 0.92rem;">${emptyDesc}</p>
             </div>
         `;
         return;
@@ -335,9 +470,16 @@ function renderAdminKDS() {
     filteredOrders.forEach(order => {
         const card = document.createElement('div');
         card.className = `order-card status-${order.status}`;
+        card.dataset.orderId = order.id;
+        card.dataset.createdAt = order.createdAt || order.timestamp || '';
+        card.dataset.status = order.status;
+
+        const elapsed = computeElapsedTime(order.createdAt || order.timestamp);
+        const urgentClass = (elapsed.isUrgent && order.status !== 'completed') ? 'elapsed-urgent' : '';
 
         let statusBadgeText = "En attente";
         let statusBadgeClass = "status-badge-pending";
+        let statusIconKey = "clock";
         let actionButtons = `
             <button class="kds-btn btn-prep" onclick="updateOrderStatus('${order.id}', 'preparing')">
                 ${getIcon('chef')}
@@ -352,6 +494,7 @@ function renderAdminKDS() {
         if (order.status === 'preparing') {
             statusBadgeText = "En préparation";
             statusBadgeClass = "status-badge-preparing";
+            statusIconKey = "chef";
             actionButtons = `
                 <button class="kds-btn btn-ready" onclick="updateOrderStatus('${order.id}', 'completed')">
                     ${getIcon('check')}
@@ -365,6 +508,7 @@ function renderAdminKDS() {
         } else if (order.status === 'completed') {
             statusBadgeText = "Prête / Servie";
             statusBadgeClass = "status-badge-completed";
+            statusIconKey = "check";
             actionButtons = `
                 <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">
                     ${getIcon('print')}
@@ -377,33 +521,52 @@ function renderAdminKDS() {
             `;
         }
 
-        const itemsList = order.items.map(item => `
+        const itemsList = (order.items || []).map(item => `
             <li class="order-card-item">
-                <span><span class="order-item-qty">${item.quantity}x</span> ${item.name}</span>
-                <span style="color: var(--text-secondary); font-weight: 600;">${(item.price * item.quantity).toFixed(1)} DT</span>
+                <span>
+                    <span class="order-item-qty">${item.quantity}x</span>
+                    <strong style="color: #ffffff;">${item.name}</strong>
+                </span>
+                <span style="color: var(--text-secondary); font-weight: 700; font-family: var(--font-body);">
+                    ${((item.price || 0) * (item.quantity || 1)).toFixed(1)} DT
+                </span>
             </li>
         `).join('');
 
         const noteBlock = order.notes 
-            ? `<div class="order-note-box"><strong>Instruction client :</strong> ${order.notes}</div>` 
+            ? `<div class="order-note-box">${getIcon('note')} <div><strong>Instruction client :</strong> ${order.notes}</div></div>` 
             : '';
 
         card.innerHTML = `
             <div class="order-card-header">
                 <div>
                     <span class="order-table-badge">TABLE ${order.table}</span>
-                    <span class="order-time-badge" style="margin-left: 8px;">${order.timeStr}</span>
+                    <span class="order-id-badge">#${order.id}</span>
                 </div>
-                <span class="order-status-badge ${statusBadgeClass}">${statusBadgeText}</span>
+                <div style="text-align: right;">
+                    <span class="order-status-badge ${statusBadgeClass}">
+                        ${getIcon(statusIconKey)}
+                        <span>${statusBadgeText}</span>
+                    </span>
+                    <div>
+                        <span class="order-elapsed-badge ${urgentClass}">
+                            ${getIcon('clock')}
+                            <span>${elapsed.text}</span>
+                        </span>
+                    </div>
+                </div>
             </div>
+
             <ul class="order-card-items">
                 ${itemsList}
             </ul>
+
             ${noteBlock}
+
             <div class="order-card-footer">
                 <div class="order-total-row">
-                    <span>Total Commande :</span>
-                    <span style="font-weight: 800; color: var(--gold-light); font-size: 1.15rem;">${order.total.toFixed(1)} DT</span>
+                    <span style="font-size: 0.92rem; color: var(--text-secondary); font-weight: 600;">Total Commande :</span>
+                    <span style="font-weight: 800; color: var(--gold-light); font-size: 1.25rem;">${(order.total || 0).toFixed(1)} DT</span>
                 </div>
                 <div class="order-actions">
                     ${actionButtons}
@@ -423,7 +586,8 @@ function updateOrderStatus(orderId, newStatus) {
         localStorage.setItem('kopiOrders', JSON.stringify(orders));
         SoundFX.actionSuccess();
         renderAdminKDS();
-        showToast(`Commande ${orderId} : ${newStatus}`, "check");
+        const statusLabel = newStatus === 'preparing' ? 'En préparation' : (newStatus === 'completed' ? 'Servie' : newStatus);
+        showToast(`Commande #${orderId} : ${statusLabel}`, "check");
     }
 }
 
@@ -438,7 +602,7 @@ function deleteOrder(orderId) {
 
 function setAdminFilter(filter) {
     adminFilter = filter;
-    document.querySelectorAll('.filter-btn').forEach(btn => {
+    document.querySelectorAll('.filter-btn[data-filter]').forEach(btn => {
         if (btn.dataset.filter === filter) {
             btn.classList.add('active');
         } else {
@@ -452,7 +616,7 @@ function clearAllOrders() {
     if (!confirm("Attention : Voulez-vous vraiment effacer l'historique complet des commandes d'aujourd'hui ?")) return;
     localStorage.setItem('kopiOrders', JSON.stringify([]));
     renderAdminKDS();
-    showToast("Toutes les commandes ont été effacées", "broom");
+    showToast("Historique des commandes réinitialisé", "broom");
 }
 
 // ==========================================================================
@@ -463,10 +627,10 @@ function printReceipt(orderId) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
-    let itemsText = order.items.map(i => `
+    let itemsText = (order.items || []).map(i => `
         <tr>
             <td style="padding: 5px 0;"><strong>${i.quantity}x</strong> ${i.name}</td>
-            <td style="text-align: right; padding: 5px 0;">${(i.price * i.quantity).toFixed(1)} DT</td>
+            <td style="text-align: right; padding: 5px 0;">${((i.price || 0) * (i.quantity || 1)).toFixed(1)} DT</td>
         </tr>
     `).join('');
 
@@ -493,20 +657,20 @@ function printReceipt(orderId) {
                 .text-center { text-align: center; }
                 .divider { border-top: 1px dashed #000; margin: 10px 0; }
                 table { width: 100%; border-collapse: collapse; }
-                h2 { margin: 2px 0; font-size: 18px; }
+                h2 { margin: 2px 0; font-size: 18px; letter-spacing: 1px; }
             </style>
         </head>
         <body>
             <div class="text-center">
                 <h2>KOPI KOFFEE</h2>
-                <p style="margin: 2px 0;">Food & Drink • Café Lounge</p>
-                <p style="font-size: 11px;">Ticket de Commande Cuisine</p>
+                <p style="margin: 2px 0; font-size: 11px;">Food & Drink • Café Lounge</p>
+                <p style="font-size: 11px; margin: 2px 0;">Ticket de Commande Cuisine</p>
             </div>
             <div class="divider"></div>
             <div>
-                <strong>TABLE:</strong> <span style="font-size: 16px; font-weight: bold;">${order.table}</span><br>
+                <strong>TABLE:</strong> <span style="font-size: 17px; font-weight: bold;">${order.table}</span><br>
                 <strong>Commande:</strong> #${order.id}<br>
-                <strong>Date/Heure:</strong> ${order.timeStr}
+                <strong>Date/Heure:</strong> ${order.timeStr || new Date().toLocaleTimeString()}
             </div>
             <div class="divider"></div>
             <table>
@@ -516,7 +680,7 @@ function printReceipt(orderId) {
             ${order.notes ? `<p><strong>NOTE:</strong> ${order.notes}</p><div class="divider"></div>` : ''}
             <div style="font-size: 15px; font-weight: bold; display: flex; justify-content: space-between;">
                 <span>TOTAL:</span>
-                <span>${order.total.toFixed(1)} DT</span>
+                <span>${(order.total || 0).toFixed(1)} DT</span>
             </div>
             <div class="divider"></div>
             <div class="text-center" style="font-size: 11px; margin-top: 12px;">
@@ -533,3 +697,4 @@ function printReceipt(orderId) {
     `);
     printWindow.document.close();
 }
+

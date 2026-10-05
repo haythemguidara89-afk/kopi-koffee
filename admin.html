@@ -19,19 +19,21 @@
     <div class="app-wrapper">
 
         <!-- ================================================================
-             1. AUTHENTICATION / PASSWORD SCREEN (PIN Code: 10699)
+             1. AUTHENTICATION SCREEN (PIN Code: 10699)
              ================================================================ -->
         <section id="admin-auth-view" class="admin-login-screen">
-            <div class="pin-modal" style="margin: 0 auto; max-width: 420px; padding: 36px 28px;">
-                <img src="logo-gold.png" alt="Kopi Koffee" style="height: 65px; margin: 0 auto 14px auto; display: block;">
+            <div class="pin-modal" style="margin: 0 auto; max-width: 420px; padding: 40px 28px;">
+                <img src="logo-gold.png" alt="Kopi Koffee" style="height: 68px; margin: 0 auto 16px auto; display: block; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));">
+                
                 <div class="pin-lock-icon">
                     <svg class="icon-svg icon-svg-xl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                         <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
                     </svg>
                 </div>
-                <h1 class="pin-title" style="font-size: 1.5rem;">Espace Administration</h1>
-                <p class="pin-desc">Veuillez entrer votre mot de passe pour accéder à la cuisine</p>
+                
+                <h1 class="pin-title" style="font-size: 1.55rem; margin-bottom: 4px;">Espace Administration</h1>
+                <p class="pin-desc" style="margin-bottom: 22px;">Système Cuisine & Comptoir KDS • Kopi Koffee</p>
 
                 <!-- PIN Dots Display -->
                 <div class="pin-dots-container" style="margin-bottom: 18px;">
@@ -44,7 +46,7 @@
 
                 <div id="pin-error-msg" class="pin-error-text"></div>
 
-                <!-- On-Screen Numeric Keypad -->
+                <!-- On-Screen Luxury Numeric Keypad -->
                 <div class="pin-keypad">
                     <button type="button" class="pin-key" onclick="appendPinDigit('1')">1</button>
                     <button type="button" class="pin-key" onclick="appendPinDigit('2')">2</button>
@@ -55,26 +57,35 @@
                     <button type="button" class="pin-key" onclick="appendPinDigit('7')">7</button>
                     <button type="button" class="pin-key" onclick="appendPinDigit('8')">8</button>
                     <button type="button" class="pin-key" onclick="appendPinDigit('9')">9</button>
-                    <button type="button" class="pin-key key-clear" onclick="clearPin()">Effacer</button>
+                    <button type="button" class="pin-key key-clear" onclick="clearPin()">
+                        <span style="font-size: 0.82rem; font-weight: 700;">Effacer</span>
+                    </button>
                     <button type="button" class="pin-key" onclick="appendPinDigit('0')">0</button>
                     <button type="button" class="pin-key key-enter" onclick="submitCurrentPin()">
-                        <span>Valider</span>
+                        <span style="font-size: 0.82rem; font-weight: 800;">Valider</span>
                     </button>
                 </div>
 
-                <!-- Keyboard input alternative -->
-                <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(229, 166, 56, 0.2);">
-                    <input type="password" id="admin-password-direct" placeholder="Ou tapez votre code ici..." 
-                           style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--gold-border); color: #fff; padding: 12px 14px; border-radius: var(--radius-sm); font-size: 1rem; text-align: center; margin-bottom: 12px;"
-                           onkeydown="if(event.key==='Enter') submitDirectPassword()">
-                    <button type="button" class="portal-btn" style="padding: 12px 16px; font-size: 0.92rem;" onclick="submitDirectPassword()">
-                        <span>Déverrouiller avec le clavier</span>
-                    </button>
+                <!-- Keyboard Hint -->
+                <div class="pin-keyboard-hint">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
+                        <line x1="6" y1="8" x2="6.01" y2="8"/>
+                        <line x1="10" y1="8" x2="10.01" y2="8"/>
+                        <line x1="14" y1="8" x2="14.01" y2="8"/>
+                        <line x1="18" y1="8" x2="18.01" y2="8"/>
+                        <line x1="6" y1="12" x2="6.01" y2="12"/>
+                        <line x1="10" y1="12" x2="10.01" y2="12"/>
+                        <line x1="14" y1="12" x2="14.01" y2="12"/>
+                        <line x1="18" y1="12" x2="18.01" y2="12"/>
+                        <line x1="8" y1="16" x2="16" y2="16"/>
+                    </svg>
+                    <span>Pavé tactile ou clavier physique activé (Code: 10699)</span>
                 </div>
 
                 <div style="margin-top: 20px;">
-                    <a href="index.html" class="admin-nav-btn" style="font-size: 0.82rem;">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                    <a href="index.html" class="admin-nav-btn" style="font-size: 0.85rem;">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <line x1="19" y1="12" x2="5" y2="12"></line>
                             <polyline points="12 19 5 12 12 5"></polyline>
                         </svg>
@@ -94,29 +105,43 @@
                 <div class="admin-nav-left">
                     <img src="logo-gold.png" alt="Kopi Koffee" class="admin-nav-logo">
                     <div>
-                        <h2 class="admin-nav-title">Cuisine & Comptoir KDS</h2>
-                        <span style="font-size: 0.78rem; color: var(--gold-light); letter-spacing: 0.5px;">Gestion des commandes en direct • Kopi Koffee</span>
+                        <div class="admin-nav-title">
+                            <span>Kopi Koffee</span>
+                            <span class="admin-badge-pill">Cuisine KDS</span>
+                            <span class="live-status-pill"><span class="live-status-dot"></span> En direct</span>
+                        </div>
+                        <span style="font-size: 0.78rem; color: var(--gold-light); letter-spacing: 0.4px;">Gestion & Affichage des commandes en temps réel</span>
                     </div>
                 </div>
 
                 <div class="admin-nav-right">
                     <div id="live-clock" class="admin-clock-badge">--:--:--</div>
-                    <button id="sound-toggle" class="admin-nav-btn sound-on">
+                    
+                    <button id="fullscreen-toggle" class="admin-nav-btn" onclick="toggleFullscreen()" title="Basculer en plein écran">
+                        <svg id="fullscreen-icon" class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+                        </svg>
+                        <span id="fullscreen-text">Plein Écran</span>
+                    </button>
+
+                    <button id="sound-toggle" class="admin-nav-btn sound-on" title="Activer / Couper les alertes sonores">
                         <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                         </svg>
                         <span>Son Activé</span>
                     </button>
+
                     <a href="index.html" target="_blank" class="admin-nav-btn" title="Ouvrir le menu client dans un nouvel onglet">
                         <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="2" y1="12" x2="22" y2="12"/>
                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
                         </svg>
-                        <span>Espace Client</span>
+                        <span>Menu Client</span>
                     </a>
-                    <button class="admin-nav-btn admin-lock-btn" onclick="logoutAdmin()">
+
+                    <button class="admin-nav-btn admin-lock-btn" onclick="logoutAdmin()" title="Verrouiller la session cuisine">
                         <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
                             <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
@@ -128,7 +153,7 @@
 
             <!-- Key Metrics Overview -->
             <div class="admin-metrics">
-                <div class="metric-card">
+                <div class="metric-card card-pending">
                     <div class="metric-icon">
                         <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
@@ -136,11 +161,25 @@
                         </svg>
                     </div>
                     <div>
-                        <div id="metric-active-orders" class="metric-value">0</div>
-                        <div class="metric-label">Commandes en attente & cours</div>
+                        <div id="metric-pending-orders" class="metric-value">0</div>
+                        <div class="metric-label">Commandes en attente</div>
                     </div>
                 </div>
-                <div class="metric-card">
+
+                <div class="metric-card card-preparing">
+                    <div class="metric-icon">
+                        <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z"/>
+                            <line x1="6" y1="17" x2="18" y2="17"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <div id="metric-preparing-orders" class="metric-value">0</div>
+                        <div class="metric-label">En préparation active</div>
+                    </div>
+                </div>
+
+                <div class="metric-card card-revenue">
                     <div class="metric-icon">
                         <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
@@ -154,7 +193,8 @@
                         <div class="metric-label">Recette totale du jour</div>
                     </div>
                 </div>
-                <div class="metric-card">
+
+                <div class="metric-card card-items">
                     <div class="metric-icon">
                         <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M4 18h16"/>
@@ -169,25 +209,62 @@
                 </div>
             </div>
 
-            <!-- KDS Filter & Actions Bar -->
+            <!-- KDS Search, Filters & Controls Bar -->
             <div class="admin-controls">
-                <div class="admin-filter-group">
-                    <button class="filter-btn active" data-filter="all" onclick="setAdminFilter('all')">Toutes</button>
-                    <button class="filter-btn" data-filter="pending" onclick="setAdminFilter('pending')">En attente</button>
-                    <button class="filter-btn" data-filter="preparing" onclick="setAdminFilter('preparing')">En préparation</button>
-                    <button class="filter-btn" data-filter="completed" onclick="setAdminFilter('completed')">Servies</button>
+                <!-- Search input by table or order ID -->
+                <div class="admin-search-wrapper">
+                    <svg class="icon-svg admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="admin-search-input" class="admin-search-input" placeholder="Rechercher table (ex: 5) ou commande..." oninput="handleAdminSearch(this.value)">
+                    <button type="button" id="admin-search-clear" class="admin-search-clear hidden" onclick="clearAdminSearch()" title="Effacer la recherche">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                        </svg>
+                    </button>
                 </div>
 
+                <!-- Status Filter Tabs with Real-time Count Badges -->
+                <div class="admin-filter-group">
+                    <button class="filter-btn active" data-filter="all" onclick="setAdminFilter('all')">
+                        <span>Toutes</span>
+                        <span id="count-all" class="filter-count-badge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="pending" onclick="setAdminFilter('pending')">
+                        <span>En attente</span>
+                        <span id="count-pending" class="filter-count-badge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="preparing" onclick="setAdminFilter('preparing')">
+                        <span>En préparation</span>
+                        <span id="count-preparing" class="filter-count-badge">0</span>
+                    </button>
+                    <button class="filter-btn" data-filter="completed" onclick="setAdminFilter('completed')">
+                        <span>Servies</span>
+                        <span id="count-completed" class="filter-count-badge">0</span>
+                    </button>
+                </div>
+
+                <!-- Action Controls -->
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="filter-btn" onclick="manualRefreshKDS()" title="Actualiser manuellement">
+                        <svg id="refresh-icon" class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <polyline points="1 20 1 14 7 14"/>
+                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                        </svg>
+                        <span>Actualiser</span>
+                    </button>
+
                     <button class="filter-btn" onclick="clearAllOrders()" style="color: var(--danger); border-color: rgba(231,76,60,0.35);">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="m14 11 6-6"/>
                             <path d="m19 5 1.5 1.5"/>
                             <path d="m11 14 3-3-4-4-3 3 4 4z"/>
                             <path d="M3 21l8-8"/>
                             <path d="M3 21h5l-2-2-3-3v5z"/>
                         </svg>
-                        <span>Réinitialiser l'historique</span>
+                        <span>Réinitialiser</span>
                     </button>
                 </div>
             </div>
