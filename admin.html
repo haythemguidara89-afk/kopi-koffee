@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Kopi Koffee • Administration & Cuisine KDS</title>
+    <meta name="description" content="Système d'affichage cuisine et gestion des commandes en temps réel pour Kopi Koffee.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="logo-gold.png">
+</head>
+<body>
+
+    <!-- Toast Notifications Container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <div class="app-wrapper">
+
+        <!-- ================================================================
+             1. AUTHENTICATION / PASSWORD SCREEN (PIN Code: 10699)
+             ================================================================ -->
+        <section id="admin-auth-view" class="admin-login-screen">
+            <div class="pin-modal" style="margin: 0 auto; max-width: 420px; padding: 36px 28px;">
+                <img src="logo-gold.png" alt="Kopi Koffee" style="height: 65px; margin: 0 auto 14px auto; display: block;">
+                <div class="pin-lock-icon">🔒</div>
+                <h1 class="pin-title" style="font-size: 1.5rem;">Espace Administration</h1>
+                <p class="pin-desc">Veuillez entrer votre mot de passe pour accéder à la cuisine</p>
+
+                <!-- PIN Dots Display -->
+                <div class="pin-dots-container" style="margin-bottom: 18px;">
+                    <div class="pin-dot" id="dot-0"></div>
+                    <div class="pin-dot" id="dot-1"></div>
+                    <div class="pin-dot" id="dot-2"></div>
+                    <div class="pin-dot" id="dot-3"></div>
+                    <div class="pin-dot" id="dot-4"></div>
+                </div>
+
+                <div id="pin-error-msg" class="pin-error-text"></div>
+
+                <!-- On-Screen Numeric Keypad -->
+                <div class="pin-keypad">
+                    <button type="button" class="pin-key" onclick="appendPinDigit('1')">1</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('2')">2</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('3')">3</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('4')">4</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('5')">5</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('6')">6</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('7')">7</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('8')">8</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('9')">9</button>
+                    <button type="button" class="pin-key key-clear" onclick="clearPin()">Effacer</button>
+                    <button type="button" class="pin-key" onclick="appendPinDigit('0')">0</button>
+                    <button type="button" class="pin-key key-enter" onclick="submitCurrentPin()">Valider ➔</button>
+                </div>
+
+                <!-- Keyboard input alternative -->
+                <div style="margin-top: 24px; padding-top: 18px; border-top: 1px solid rgba(229, 166, 56, 0.2);">
+                    <input type="password" id="admin-password-direct" placeholder="Ou tapez le code ici..." 
+                           style="width: 100%; background: rgba(0,0,0,0.5); border: 1px solid var(--gold-border); color: #fff; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 1rem; text-align: center; margin-bottom: 10px;"
+                           onkeydown="if(event.key==='Enter') submitDirectPassword()">
+                    <button type="button" class="portal-btn" style="padding: 10px 16px; font-size: 0.9rem;" onclick="submitDirectPassword()">
+                        Déverrouiller avec le clavier ➔
+                    </button>
+                </div>
+
+                <div style="margin-top: 20px;">
+                    <a href="index.html" class="admin-nav-btn" style="font-size: 0.82rem;">
+                        ← Retour au Menu Client
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================
+             2. AUTHENTICATED KITCHEN DISPLAY SYSTEM (KDS)
+             ================================================================ -->
+        <main id="admin-kds-view" class="hidden">
+
+            <!-- Admin Navigation Top Bar -->
+            <header class="admin-header-nav">
+                <div class="admin-nav-left">
+                    <img src="logo-gold.png" alt="Kopi Koffee" class="admin-nav-logo">
+                    <div>
+                        <h2 class="admin-nav-title">Cuisine & Comptoir KDS</h2>
+                        <span style="font-size: 0.78rem; color: var(--gold-light);">Système en direct • Kopi Koffee</span>
+                    </div>
+                </div>
+
+                <div class="admin-nav-right">
+                    <div id="live-clock" class="admin-clock-badge">--:--:--</div>
+                    <button id="sound-toggle" class="admin-nav-btn sound-on">🔔 Son Activé</button>
+                    <a href="index.html" target="_blank" class="admin-nav-btn" title="Ouvrir le menu client dans un nouvel onglet">
+                        🌐 Espace Client
+                    </a>
+                    <button class="admin-nav-btn admin-lock-btn" onclick="logoutAdmin()">
+                        🔒 Verrouiller
+                    </button>
+                </div>
+            </header>
+
+            <!-- Key Metrics Overview -->
+            <div class="admin-metrics">
+                <div class="metric-card">
+                    <div class="metric-icon">⏳</div>
+                    <div>
+                        <div id="metric-active-orders" class="metric-value">0</div>
+                        <div class="metric-label">Commandes en attente & cours</div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">💰</div>
+                    <div>
+                        <div id="metric-today-revenue" class="metric-value">0.0 DT</div>
+                        <div class="metric-label">Recette totale du jour</div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-icon">🍽️</div>
+                    <div>
+                        <div id="metric-items-prepared" class="metric-value">0</div>
+                        <div class="metric-label">Total articles préparés</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- KDS Filter & Actions Bar -->
+            <div class="admin-controls">
+                <div class="admin-filter-group">
+                    <button class="filter-btn active" data-filter="all" onclick="setAdminFilter('all')">Toutes</button>
+                    <button class="filter-btn" data-filter="pending" onclick="setAdminFilter('pending')">En attente</button>
+                    <button class="filter-btn" data-filter="preparing" onclick="setAdminFilter('preparing')">En préparation</button>
+                    <button class="filter-btn" data-filter="completed" onclick="setAdminFilter('completed')">Servies</button>
+                </div>
+
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="filter-btn" onclick="clearAllOrders()" style="color: var(--danger); border-color: rgba(231,76,60,0.35);">
+                        🧹 Réinitialiser l'historique
+                    </button>
+                </div>
+            </div>
+
+            <!-- Orders Grid -->
+            <div id="admin-orders-container" class="admin-orders-grid"></div>
+
+        </main>
+
+    </div>
+
+    <!-- Scripts -->
+    <script src="menu-data.js"></script>
+    <script src="admin.js"></script>
+</body>
+</html>

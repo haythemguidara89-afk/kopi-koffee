@@ -1,7 +1,5 @@
-// Kopi Koffee - Core Application Logic
-// Customer Ordering, Real-time Cart, Table Management, & Protected Kitchen Display System
-
-const STAFF_PIN_CODE = "10699";
+// Kopi Koffee - Customer Ordering Application Logic (app.js)
+// Elder-friendly UX, clear table management, instant cart, and live order tracking
 
 let currentTable = localStorage.getItem('kopiCurrentTable') || '';
 let cart = JSON.parse(localStorage.getItem('kopiCart')) || [];
@@ -9,13 +7,8 @@ let activeMainGroup = 'categories';
 let activeSubcat = 'all';
 let viewLayout = localStorage.getItem('kopiViewLayout') || 'grid';
 let searchQuery = '';
-let currentView = 'portal'; // 'portal' | 'customer' | 'admin'
-let adminFilter = 'all';
-let soundEnabled = localStorage.getItem('kopiSoundEnabled') !== 'false';
+let soundEnabled = true;
 let customerActiveOrderId = localStorage.getItem('kopiActiveOrderId') || null;
-
-// PIN State
-let enteredPin = "";
 
 // ==========================================================================
 // AUDIO SYNTHESIS (Clean native chimes via Web Audio API)
@@ -64,20 +57,8 @@ class SoundFX {
         this.playChime([523.25, 659.25, 1046.50]); // C5, E5, C6
     }
 
-    static kitchenAlert() {
-        this.playChime([440, 554.37, 659.25, 880]); // A4, C#5, E5, A5
-    }
-
     static itemAdded() {
         this.playChime([659.25, 880]); // E5, A5
-    }
-
-    static accessGranted() {
-        this.playChime([440, 659.25, 880]); // A4, E5, A5
-    }
-
-    static accessDenied() {
-        this.playChime([300, 220], 'sawtooth');
     }
 }
 
@@ -95,22 +76,22 @@ function showToast(message, icon = '✨') {
     
     setTimeout(() => {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 3000);
+    }, 2800);
 }
 
 // ==========================================================================
 // INITIALIZATION
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
+    updateActiveTableDisplay();
     updateCartTableUI();
     renderMainGroups();
     renderSubcategories();
     renderMenu();
     updateCartUI();
-    renderAdminKDS();
     checkCustomerOrderStatus();
 
-    // Table input listeners
+    // Table modal input listeners
     const modalCustomInput = document.getElementById('table-modal-custom');
     if (modalCustomInput) {
         modalCustomInput.addEventListener('keydown', (e) => {
@@ -130,22 +111,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 submitOrder();
             }
         });
-    }
-
-    // Check URL parameters for direct view routing (e.g. ?view=customer or ?view=kitchen)
-    const urlParams = new URLSearchParams(window.location.search);
-    const viewParam = urlParams.get('view');
-    if (viewParam === 'customer') {
-        enterCustomerView();
-    } else if (viewParam === 'kitchen' || viewParam === 'admin') {
-        if (sessionStorage.getItem('kopiStaffAuth') === 'true') {
-            enterAdminView();
-        } else {
-            openPinModal();
-        }
-    } else {
-        // Default to portal welcome screen
-        switchView('portal');
     }
 
     // Setup Search
@@ -174,207 +139,51 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Sound toggle in admin
-    const soundToggle = document.getElementById('sound-toggle');
-    if (soundToggle) {
-        updateSoundButtonUI();
-        soundToggle.addEventListener('click', () => {
-            soundEnabled = !soundEnabled;
-            localStorage.setItem('kopiSoundEnabled', soundEnabled);
-            updateSoundButtonUI();
-            if (soundEnabled) SoundFX.playChime([523, 659]);
-        });
-    }
-
-    // Keyboard support for PIN entry
-    window.addEventListener('keydown', (e) => {
-        const overlay = document.getElementById('pin-modal-overlay');
-        if (overlay && overlay.classList.contains('open')) {
-            if (e.key >= '0' && e.key <= '9') {
-                appendPinDigit(e.key);
-            } else if (e.key === 'Backspace') {
-                clearPin();
-            } else if (e.key === 'Enter') {
-                submitCurrentPin();
-            } else if (e.key === 'Escape') {
-                closePinModal();
-            }
-        }
-    });
-
-    // Real-time synchronization across browser tabs
+    // Real-time synchronization: listen for status changes from kitchen
     window.addEventListener('storage', (e) => {
         if (e.key === 'kopiOrders') {
-            const previousCount = window.__lastOrderCount || 0;
-            const orders = JSON.parse(e.newValue || '[]');
-            if (orders.length > previousCount && currentView === 'admin') {
-                SoundFX.kitchenAlert();
-                showToast("Nouvelle commande reçue en cuisine !", "🔔");
-            }
-            window.__lastOrderCount = orders.length;
-            renderAdminKDS();
             checkCustomerOrderStatus();
         }
     });
 
-    const initialOrders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-    window.__lastOrderCount = initialOrders.length;
+    // Backup polling for active order status (every 2.5 seconds)
+    setInterval(() => {
+        if (customerActiveOrderId) {
+            checkCustomerOrderStatus();
+        }
+    }, 2500);
 });
 
-function updateSoundButtonUI() {
-    const btn = document.getElementById('sound-toggle');
-    if (!btn) return;
-    if (soundEnabled) {
-        btn.classList.add('sound-on');
-        btn.innerHTML = `🔔 Son Activé`;
-    } else {
-        btn.classList.remove('sound-on');
-        btn.innerHTML = `🔕 Son Coupé`;
-    }
-}
-
 // ==========================================================================
-// PIN SECURITY SYSTEM (Passcode: 10699)
+// ELDER-FRIENDLY TABLE MANAGEMENT
 // ==========================================================================
-function openPinModal() {
-    enteredPin = "";
-    updatePinDots();
-    const errorEl = document.getElementById('pin-error-msg');
-    if (errorEl) errorEl.innerText = "";
-    
-    const overlay = document.getElementById('pin-modal-overlay');
-    if (overlay) overlay.classList.add('open');
-}
+function updateActiveTableDisplay() {
+    const display = document.getElementById('active-table-display');
+    const btnText = document.getElementById('table-btn-text');
 
-function closePinModal() {
-    const overlay = document.getElementById('pin-modal-overlay');
-    if (overlay) overlay.classList.remove('open');
-    enteredPin = "";
-}
-
-function handlePinOverlayClick(e) {
-    if (e.target.id === 'pin-modal-overlay') {
-        closePinModal();
-    }
-}
-
-function appendPinDigit(digit) {
-    if (enteredPin.length < 5) {
-        enteredPin += digit;
-        updatePinDots();
-        
-        // Auto-validate when 5 digits are entered
-        if (enteredPin.length === 5) {
-            setTimeout(submitCurrentPin, 150);
+    if (display) {
+        if (currentTable) {
+            display.innerHTML = `<span style="color: var(--gold-light); font-weight: 800;">Table ${currentTable}</span> • Service direct à votre place`;
+        } else {
+            display.innerText = "Table non renseignée • Toucher ici pour choisir";
         }
     }
-}
 
-function clearPin() {
-    enteredPin = "";
-    updatePinDots();
-    const errorEl = document.getElementById('pin-error-msg');
-    if (errorEl) errorEl.innerText = "";
-}
+    if (btnText) {
+        btnText.innerText = currentTable ? "✏️ Changer de table" : "✏️ Choisir ma table";
+    }
 
-function updatePinDots() {
-    for (let i = 0; i < 5; i++) {
-        const dot = document.getElementById(`dot-${i}`);
-        if (dot) {
-            if (i < enteredPin.length) {
-                dot.classList.add('filled');
-            } else {
-                dot.classList.remove('filled');
-            }
+    // Highlight active quick table button in modal
+    document.querySelectorAll('.quick-table-btn').forEach(btn => {
+        const tableNum = btn.innerText.replace('Table ', '').trim();
+        if (tableNum === currentTable) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
         }
-    }
+    });
 }
 
-function submitCurrentPin() {
-    const errorEl = document.getElementById('pin-error-msg');
-    const modal = document.getElementById('pin-modal-card');
-
-    if (enteredPin === STAFF_PIN_CODE) {
-        sessionStorage.setItem('kopiStaffAuth', 'true');
-        SoundFX.accessGranted();
-        showToast("Accès Cuisine Autorisé", "🔓");
-        closePinModal();
-        enterAdminView();
-    } else {
-        SoundFX.accessDenied();
-        if (errorEl) errorEl.innerText = "Code PIN incorrect. Veuillez réessayer.";
-        if (modal) {
-            modal.classList.add('shake');
-            setTimeout(() => modal.classList.remove('shake'), 450);
-        }
-        enteredPin = "";
-        updatePinDots();
-    }
-}
-
-// ==========================================================================
-// VIEW SWITCHING (Portal / Customer / Kitchen)
-// ==========================================================================
-function switchView(view) {
-    currentView = view;
-    const portalView = document.getElementById('portal-view');
-    const customerView = document.getElementById('customer-view');
-    const adminView = document.getElementById('admin-view');
-    const siteHeader = document.getElementById('site-header');
-    const headerStatusText = document.getElementById('header-status-text');
-    const headerSubtitleText = document.getElementById('header-subtitle-text');
-    const headerExitBtn = document.getElementById('header-exit-btn');
-    const cartBar = document.getElementById('floating-cart-bar');
-
-    // Hide all main containers first
-    if (portalView) portalView.classList.add('hidden');
-    if (customerView) customerView.classList.add('hidden');
-    if (adminView) adminView.classList.add('hidden');
-    if (cartBar) cartBar.classList.add('hidden');
-
-    if (view === 'portal') {
-        if (portalView) portalView.classList.remove('hidden');
-        if (siteHeader) siteHeader.classList.add('hidden');
-    } else if (view === 'customer') {
-        if (customerView) customerView.classList.remove('hidden');
-        if (siteHeader) siteHeader.classList.remove('hidden');
-        if (headerStatusText) headerStatusText.innerText = "Ouvert • Service à table";
-        if (headerSubtitleText) headerSubtitleText.innerText = "Food & Drink • Café Lounge";
-        if (headerExitBtn) headerExitBtn.innerHTML = "<span>✕</span> Changer d'espace";
-        updateCartUI();
-    } else if (view === 'admin') {
-        if (adminView) adminView.classList.remove('hidden');
-        if (siteHeader) siteHeader.classList.remove('hidden');
-        if (headerStatusText) headerStatusText.innerText = "👨‍🍳 Écran Cuisine & Caisse (Direct)";
-        if (headerSubtitleText) headerSubtitleText.innerText = "Console de Préparation & Commandes";
-        if (headerExitBtn) headerExitBtn.innerHTML = "<span>🔒</span> Verrouiller / Quitter";
-        renderAdminKDS();
-    }
-}
-
-function enterCustomerView() {
-    switchView('customer');
-    renderMainGroups();
-    renderMenu();
-}
-
-function enterAdminView() {
-    switchView('admin');
-}
-
-function returnToPortal() {
-    if (currentView === 'admin') {
-        sessionStorage.removeItem('kopiStaffAuth');
-        showToast("Session cuisine verrouillée", "🔒");
-    }
-    switchView('portal');
-}
-
-// ==========================================================================
-// TABLE SELECTION LOGIC (In-Cart & Order-Time Prompt)
-// ==========================================================================
-// TABLE SELECTION LOGIC (Direct Input in Cart & Prompt Modal)
-// ==========================================================================
 function setCartTable(num, notify = true) {
     const trimmed = String(num || '').trim();
     if (!trimmed) {
@@ -384,14 +193,20 @@ function setCartTable(num, notify = true) {
         currentTable = trimmed;
         localStorage.setItem('kopiCurrentTable', currentTable);
     }
+
+    updateActiveTableDisplay();
     updateCartTableUI();
+
     if (notify && currentTable) {
-        showToast(`Table ${currentTable} enregistrée`, "📍");
+        showToast(`Table ${currentTable} sélectionnée avec succès`, "📍");
     }
 }
 
-function setTable(num) {
-    setCartTable(num);
+function selectQuickTable(num) {
+    setCartTable(num, true);
+    const customInput = document.getElementById('table-modal-custom');
+    if (customInput) customInput.value = num;
+    closeTableModal();
 }
 
 function updateCartTableUI() {
@@ -419,11 +234,11 @@ function openTableModal() {
     if (customInput) {
         customInput.value = currentTable || '';
     }
+    updateActiveTableDisplay();
     if (overlay) overlay.classList.add('open');
     if (customInput) {
         setTimeout(() => {
             customInput.focus();
-            customInput.select();
         }, 200);
     }
 }
@@ -443,15 +258,21 @@ function confirmTableAndSubmit() {
     const customInput = document.getElementById('table-modal-custom');
     const customVal = customInput ? customInput.value.trim() : '';
 
-    if (!customVal) {
-        alert("Veuillez indiquer le numéro de votre table.");
+    if (!customVal && !currentTable) {
+        alert("Veuillez sélectionner ou indiquer le numéro de votre table.");
         if (customInput) customInput.focus();
         return;
     }
 
-    setCartTable(customVal, false);
+    if (customVal) {
+        setCartTable(customVal, true);
+    }
     closeTableModal();
-    submitOrder();
+
+    // If customer has items in cart and clicked confirm, proceed with submit
+    if (cart.length > 0) {
+        submitOrder();
+    }
 }
 
 // ==========================================================================
@@ -619,7 +440,7 @@ function renderCategoryHub() {
                         <h3 class="category-card-title">${group.name}</h3>
                     </div>
                     <p class="category-card-desc">${group.desc || 'Découvrez notre sélection gourmande et raffinée.'}</p>
-                    <span class="category-card-cta">Explorer la sélection ➔</span>
+                    <span class="category-card-cta">Consulter la carte ➔</span>
                 </div>
             </div>
         `;
@@ -628,8 +449,8 @@ function renderCategoryHub() {
     container.innerHTML = `
         <div class="category-hub">
             <div class="category-hub-intro">
-                <h2 class="category-hub-title">Notre Carte Gourmande</h2>
-                <p class="category-hub-subtitle">Appuyez sur une catégorie pour afficher nos cafés, délices et formules préparés sur commande</p>
+                <h2 class="category-hub-title">Carte des Délices Kopi Koffee</h2>
+                <p class="category-hub-subtitle">Appuyez simplement sur une catégorie pour afficher nos cafés, délices et formules préparés à la commande</p>
             </div>
             <div class="category-hub-grid">
                 ${cardsHtml}
@@ -643,7 +464,7 @@ function renderMenu() {
     const banner = document.getElementById('category-banner');
     if (!container) return;
 
-    // Search Mode takes precedence over category browsing
+    // Search Mode takes precedence
     if (searchQuery) {
         if (banner) banner.style.display = 'none';
         const subcatsContainer = document.getElementById('subcategories-container');
@@ -661,7 +482,7 @@ function renderMenu() {
                     <h3 style="font-size: 1.3rem; color: var(--gold-light); margin-bottom: 8px;">Aucun produit trouvé</h3>
                     <p>Aucun article ne correspond à "${searchQuery}". Essayez avec un autre mot ou parcourez nos catégories.</p>
                     <button class="category-back-btn" style="margin-top: 18px;" onclick="backToCategories()">
-                        Voir Toutes les Catégories
+                        ← Revenir aux Catégories
                     </button>
                 </div>
             `;
@@ -674,7 +495,7 @@ function renderMenu() {
         return;
     }
 
-    // Level 1: Category Directory Hub (Clean, no clutter, no 126 products dumped)
+    // Level 1: Category Directory Hub
     if (activeMainGroup === 'categories') {
         if (banner) banner.style.display = 'none';
         const subcatsContainer = document.getElementById('subcategories-container');
@@ -683,7 +504,7 @@ function renderMenu() {
         return;
     }
 
-    // Level 2: Specific Category Items (Only elements of that category)
+    // Level 2: Specific Category Items
     if (banner) {
         banner.style.display = 'flex';
         const group = MAIN_GROUPS.find(g => g.id === activeMainGroup);
@@ -795,7 +616,7 @@ function createProductCard(item) {
                     <button class="step-btn" onclick="changeCardQuantity('${item.id}', 1)" aria-label="Plus">+</button>
                 </div>
                 <button class="add-btn" onclick="addFromCard('${item.id}')">
-                    <span>${qtyInCart > 0 ? '✓ Ajouté' : '+ Ajouter'}</span>
+                    <span>${qtyInCart > 0 ? '✓ Ajouté (' + qtyInCart + ')' : '+ Ajouter'}</span>
                 </button>
             </div>
         </div>
@@ -828,7 +649,7 @@ function addFromCard(itemId) {
     if (qtySpan) qtySpan.innerText = 1;
 
     SoundFX.itemAdded();
-    showToast(`${qty}x ${item.name} ajouté(s)`, "🛒");
+    showToast(`${qty}x ${item.name} ajouté au panier`, "🛒");
 }
 
 // ==========================================================================
@@ -851,6 +672,7 @@ function addToCart(item, quantity = 1) {
     saveCart();
     updateCartUI();
     renderCartDrawerItems();
+    renderMenu();
 }
 
 function updateCartQuantity(itemId, delta) {
@@ -880,8 +702,6 @@ function saveCart() {
 }
 
 function updateCartUI() {
-    if (currentView !== 'customer') return;
-
     const bar = document.getElementById('floating-cart-bar');
     const badge = document.getElementById('cart-badge');
     const totalEl = document.getElementById('cart-bar-total');
@@ -929,7 +749,7 @@ function renderCartDrawerItems() {
             <div class="cart-empty-message">
                 <div style="font-size: 2.5rem; margin-bottom: 8px;">☕</div>
                 <p>Votre panier est vide pour le moment.</p>
-                <p style="font-size: 0.85rem; margin-top: 6px; color: var(--gold-light);">Sélectionnez vos délices pour commencer votre commande !</p>
+                <p style="font-size: 0.85rem; margin-top: 6px; color: var(--gold-light);">Sélectionnez vos boissons ou plats préférés pour commencer !</p>
             </div>
         `;
         if (totalSpan) totalSpan.innerText = '0.0 DT';
@@ -953,9 +773,9 @@ function renderCartDrawerItems() {
                 <div class="cart-item-price">${itemTotal.toFixed(1)} DT <span style="font-size: 0.75rem; color: var(--text-muted);">(${item.price} DT/u)</span></div>
             </div>
             <div class="card-stepper" style="background: rgba(0,0,0,0.45);">
-                <button class="step-btn" onclick="updateCartQuantity('${item.id}', -1)">-</button>
+                <button class="step-btn" onclick="updateCartQuantity('${item.id}', -1)" aria-label="Moins">-</button>
                 <span class="step-qty">${item.quantity}</span>
-                <button class="step-btn" onclick="updateCartQuantity('${item.id}', 1)">+</button>
+                <button class="step-btn" onclick="updateCartQuantity('${item.id}', 1)" aria-label="Plus">+</button>
             </div>
             <button class="cart-item-remove" onclick="removeFromCart('${item.id}')" title="Supprimer">🗑️</button>
         `;
@@ -976,6 +796,7 @@ function submitOrder() {
 
     // Prompt table selection modal if table is not yet chosen
     if (!currentTable || currentTable.trim() === '') {
+        closeCartDrawer();
         openTableModal();
         return;
     }
@@ -1012,7 +833,6 @@ function submitOrder() {
     SoundFX.orderSuccess();
     
     showCustomerOrderModal(newOrder);
-    renderAdminKDS();
 }
 
 // ==========================================================================
@@ -1067,226 +887,4 @@ function updateCustomerOrderModalSteps(status) {
 function closeStatusModal() {
     const overlay = document.getElementById('status-modal-overlay');
     if (overlay) overlay.classList.remove('open');
-}
-
-// ==========================================================================
-// KITCHEN & ADMIN DISPLAY SYSTEM (KDS)
-// ==========================================================================
-function renderAdminKDS() {
-    const container = document.getElementById('admin-orders-container');
-    const metricActive = document.getElementById('metric-active-orders');
-    const metricRevenue = document.getElementById('metric-today-revenue');
-    const metricItems = document.getElementById('metric-items-prepared');
-
-    const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-
-    const activeOrders = orders.filter(o => o.status !== 'completed');
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const totalItems = orders.reduce((sum, o) => sum + o.items.reduce((isum, i) => isum + i.quantity, 0), 0);
-
-    if (metricActive) metricActive.innerText = activeOrders.length;
-    if (metricRevenue) metricRevenue.innerText = `${totalRevenue.toFixed(1)} DT`;
-    if (metricItems) metricItems.innerText = totalItems;
-
-    if (!container) return;
-
-    let filteredOrders = orders;
-    if (adminFilter !== 'all') {
-        filteredOrders = orders.filter(o => o.status === adminFilter);
-    }
-
-    if (filteredOrders.length === 0) {
-        container.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 60px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-md); border: 1px dashed var(--gold-border);">
-                <div style="font-size: 2.5rem; margin-bottom: 8px;">🍽️</div>
-                <h3 style="color: var(--gold-light); font-size: 1.2rem;">Aucune commande dans cette section</h3>
-                <p>Toutes les commandes ont été traitées ou aucune commande en cours.</p>
-            </div>
-        `;
-        return;
-    }
-
-    container.innerHTML = '';
-    filteredOrders.forEach(order => {
-        const card = document.createElement('div');
-        card.className = `order-card status-${order.status}`;
-
-        let statusBadgeText = "En attente";
-        let statusBadgeClass = "status-badge-pending";
-        let actionButtons = `
-            <button class="kds-btn btn-prep" onclick="updateOrderStatus('${order.id}', 'preparing')">👨‍🍳 Préparer</button>
-            <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">🖨️ Ticket</button>
-        `;
-
-        if (order.status === 'preparing') {
-            statusBadgeText = "En préparation";
-            statusBadgeClass = "status-badge-preparing";
-            actionButtons = `
-                <button class="kds-btn btn-ready" onclick="updateOrderStatus('${order.id}', 'completed')">✓ Marquer Servi</button>
-                <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">🖨️ Ticket</button>
-            `;
-        } else if (order.status === 'completed') {
-            statusBadgeText = "Prête / Servie";
-            statusBadgeClass = "status-badge-completed";
-            actionButtons = `
-                <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">🖨️ Ticket</button>
-                <button class="kds-btn btn-delete" onclick="deleteOrder('${order.id}')">🗑️ Archiver</button>
-            `;
-        }
-
-        const itemsList = order.items.map(item => `
-            <li class="order-card-item">
-                <span><span class="order-item-qty">${item.quantity}x</span> ${item.name}</span>
-                <span style="color: var(--text-secondary);">${(item.price * item.quantity).toFixed(1)} DT</span>
-            </li>
-        `).join('');
-
-        const noteBlock = order.notes 
-            ? `<div class="order-note-box"><strong>Note client :</strong> ${order.notes}</div>` 
-            : '';
-
-        card.innerHTML = `
-            <div class="order-card-header">
-                <div>
-                    <span class="order-table-badge">Table ${order.table}</span>
-                    <span class="order-time-badge" style="margin-left: 8px;">${order.timeStr}</span>
-                </div>
-                <span class="order-status-badge ${statusBadgeClass}">${statusBadgeText}</span>
-            </div>
-            <ul class="order-card-items">
-                ${itemsList}
-            </ul>
-            ${noteBlock}
-            <div class="order-card-footer">
-                <div class="order-total-row">
-                    <span>Total Commande</span>
-                    <span>${order.total.toFixed(1)} DT</span>
-                </div>
-                <div class="order-actions">
-                    ${actionButtons}
-                </div>
-            </div>
-        `;
-
-        container.appendChild(card);
-    });
-}
-
-function updateOrderStatus(orderId, newStatus) {
-    let orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-    const order = orders.find(o => o.id === orderId);
-    if (order) {
-        order.status = newStatus;
-        localStorage.setItem('kopiOrders', JSON.stringify(orders));
-        SoundFX.playChime([523, 659]);
-        renderAdminKDS();
-        checkCustomerOrderStatus();
-        showToast(`Commande ${orderId} : ${newStatus}`, "✅");
-    }
-}
-
-function deleteOrder(orderId) {
-    if (!confirm("Voulez-vous archiver cette commande ?")) return;
-    let orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-    orders = orders.filter(o => o.id !== orderId);
-    localStorage.setItem('kopiOrders', JSON.stringify(orders));
-    renderAdminKDS();
-    showToast("Commande archivée", "📁");
-}
-
-function setAdminFilter(filter) {
-    adminFilter = filter;
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        if (btn.dataset.filter === filter) {
-            btn.classList.add('active');
-        } else {
-            btn.classList.remove('active');
-        }
-    });
-    renderAdminKDS();
-}
-
-function clearAllOrders() {
-    if (!confirm("Êtes-vous sûr de vouloir réinitialiser l'historique des commandes d'aujourd'hui ?")) return;
-    localStorage.setItem('kopiOrders', JSON.stringify([]));
-    renderAdminKDS();
-    showToast("Toutes les commandes ont été effacées", "🧹");
-}
-
-// ==========================================================================
-// RECEIPT PRINTING
-// ==========================================================================
-function printReceipt(orderId) {
-    const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-    const order = orders.find(o => o.id === orderId);
-    if (!order) return;
-
-    let itemsText = order.items.map(i => `
-        <tr>
-            <td style="padding: 4px 0;">${i.quantity}x ${i.name}</td>
-            <td style="text-align: right; padding: 4px 0;">${(i.price * i.quantity).toFixed(1)} DT</td>
-        </tr>
-    `).join('');
-
-    const printWindow = window.open('', '_blank', 'width=380,height=600');
-    if (!printWindow) {
-        alert("Veuillez autoriser les fenêtres pop-up pour imprimer le ticket.");
-        return;
-    }
-
-    printWindow.document.write(`
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <title>Ticket #${order.id} - Kopi Koffee</title>
-            <style>
-                body {
-                    font-family: monospace;
-                    padding: 16px;
-                    width: 280px;
-                    margin: 0 auto;
-                    color: #000;
-                }
-                .text-center { text-align: center; }
-                .divider { border-top: 1px dashed #000; margin: 10px 0; }
-                table { width: 100%; border-collapse: collapse; font-size: 13px; }
-                h2, h3 { margin: 4px 0; }
-            </style>
-        </head>
-        <body>
-            <div class="text-center">
-                <h2>KOPI KOFFEE</h2>
-                <p style="margin: 2px 0;">Food & Drink • Café Lounge</p>
-                <p style="font-size: 11px;">Merci de votre visite !</p>
-            </div>
-            <div class="divider"></div>
-            <div>
-                <strong>Commande:</strong> #${order.id}<br>
-                <strong>Table:</strong> ${order.table}<br>
-                <strong>Heure:</strong> ${order.timeStr}
-            </div>
-            <div class="divider"></div>
-            <table>
-                ${itemsText}
-            </table>
-            <div class="divider"></div>
-            ${order.notes ? `<p><strong>Note:</strong> ${order.notes}</p><div class="divider"></div>` : ''}
-            <div style="font-size: 16px; font-weight: bold; display: flex; justify-content: space-between;">
-                <span>TOTAL:</span>
-                <span>${order.total.toFixed(1)} DT</span>
-            </div>
-            <div class="divider"></div>
-            <div class="text-center" style="font-size: 11px; margin-top: 15px;">
-                Bonne dégustation !
-            </div>
-            <script>
-                window.onload = function() {
-                    window.print();
-                    setTimeout(function() { window.close(); }, 500);
-                };
-            </script>
-        </body>
-        </html>
-    `);
-    printWindow.document.close();
 }
