@@ -4,10 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Kopi Koffee • Food & Drink • Menu & Commande à Table</title>
-    <meta name="description" content="Menu digital intelligent et commande à table pour Kopi Koffee. Cafés d'exception, formules petit déjeuner, crêpes, jus et smoothies.">
+    <meta name="description" content="Menu digital d'exception et commande à table pour Kopi Koffee. Cafés de spécialité, formules petit déjeuner, crêpes et boissons fraîches.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,500;0,600;0,700;1,400;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="logo-gold.png">
 </head>
@@ -36,18 +36,23 @@
         </header>
 
         <!-- ================================================================
-             ELDER-FRIENDLY & ACCESSIBLE TABLE STRIP
+             ELDER-FRIENDLY & ACCESSIBLE TABLE STRIP (With Vector Pin Icon)
              ================================================================ -->
         <div class="elder-table-strip" onclick="openTableModal()" role="button" tabindex="0" aria-label="Choisir le numéro de table">
             <div class="table-strip-left">
-                <span class="table-strip-icon">📍</span>
+                <span class="table-strip-icon">
+                    <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/>
+                        <circle cx="12" cy="10" r="3"/>
+                    </svg>
+                </span>
                 <div class="table-strip-text">
                     <span class="table-strip-label">Service à table</span>
                     <span id="active-table-display" class="table-strip-value">Table non renseignée • Toucher ici pour choisir</span>
                 </div>
             </div>
             <button class="table-strip-change-btn" type="button">
-                <span id="table-btn-text">✏️ Choisir ma table</span>
+                <span id="table-btn-text">Choisir ma table</span>
             </button>
         </div>
 
@@ -64,10 +69,14 @@
             <!-- Active Category Header & Large Back Button -->
             <div id="category-banner" class="category-banner" style="display: none;">
                 <button class="category-back-btn" onclick="backToCategories()" title="Revenir aux catégories">
-                    <span class="back-arrow">←</span> Revenir aux Catégories
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 6px;">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Revenir aux Catégories</span>
                 </button>
                 <div class="category-banner-info">
-                    <span id="category-banner-icon" class="category-banner-icon">☕</span>
+                    <span id="category-banner-icon" class="category-banner-icon"></span>
                     <div>
                         <h2 id="category-banner-title" class="category-banner-title">Cafés & Boissons Chaudes</h2>
                         <span id="category-banner-count" class="category-banner-count">32 articles</span>
@@ -81,17 +90,41 @@
             <!-- Search & Layout Controls Toolbar -->
             <div class="controls-toolbar">
                 <div class="search-wrapper">
-                    <span class="search-icon-left">🔍</span>
+                    <span class="search-icon-left">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8"/>
+                            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                        </svg>
+                    </span>
                     <input type="text" id="menu-search" class="search-input" placeholder="Rechercher un café, une crêpe, un smoothie, un burger...">
-                    <button id="search-clear" class="search-clear-btn" title="Effacer la recherche">✕</button>
+                    <button id="search-clear" class="search-clear-btn" title="Effacer la recherche">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>
                 </div>
 
                 <div class="layout-toggle-group">
                     <button class="layout-btn active" data-layout="grid" onclick="setViewLayout('grid')" title="Vue grille avec photos">
-                        <span>🖼️</span> Grille
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <rect x="3" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="3" width="7" height="7" rx="1"/>
+                            <rect x="14" y="14" width="7" height="7" rx="1"/>
+                            <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        </svg>
+                        <span>Grille</span>
                     </button>
                     <button class="layout-btn" data-layout="list" onclick="setViewLayout('list')" title="Vue liste compacte">
-                        <span>📋</span> Liste
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                        <span>Liste</span>
                     </button>
                 </div>
             </div>
@@ -101,11 +134,15 @@
 
             <!-- Customer Footer with discreet staff link -->
             <footer class="customer-footer" style="margin-top: 50px; text-align: center; color: var(--text-muted); font-size: 0.85rem; padding: 24px 0 60px 0; border-top: 1px solid rgba(229, 166, 56, 0.15);">
-                <p style="font-weight: 600; color: var(--gold-light);">Kopi Koffee • Food & Drink</p>
-                <p style="margin-top: 4px;">Service à table chaleureux • Produits frais préparés à la commande</p>
+                <p style="font-weight: 700; color: var(--gold-light); letter-spacing: 0.5px;">KOPI KOFFEE • FOOD & DRINK</p>
+                <p style="margin-top: 4px;">Service à table raffiné • Produits frais préparés à la commande</p>
                 <p style="margin-top: 14px;">
                     <a href="admin.html" class="discreet-admin-link">
-                        <span>🔒</span> Accès Administration & Cuisine ➔
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px;">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                        </svg>
+                        <span>Accès Administration & Cuisine</span>
                     </a>
                 </p>
             </footer>
@@ -119,10 +156,10 @@
          ================================================================ -->
     <div id="table-modal-overlay" class="table-modal-overlay" onclick="handleTableOverlayClick(event)">
         <div class="table-modal">
-            <h3 class="table-modal-title">📍 À quelle table êtes-vous ?</h3>
-            <p class="table-modal-desc">Sélectionnez le numéro de votre table ou indiquez-le ci-dessous pour être servi directement :</p>
+            <h3 class="table-modal-title">À quelle table êtes-vous installé ?</h3>
+            <p class="table-modal-desc">Sélectionnez le numéro de votre table ou tapez-le ci-dessous pour être servi directement :</p>
 
-            <div class="modal-quick-tables-title">Sélection rapide par numéro de table :</div>
+            <div class="modal-quick-tables-title">Sélection directe :</div>
             <div class="modal-quick-tables-grid">
                 <button type="button" class="quick-table-btn" onclick="selectQuickTable('1')">Table 1</button>
                 <button type="button" class="quick-table-btn" onclick="selectQuickTable('2')">Table 2</button>
@@ -147,19 +184,23 @@
             <div style="display: flex; gap: 10px; margin-top: 20px;">
                 <button class="modal-close-btn" style="flex: 1;" onclick="closeTableModal()">Fermer</button>
                 <button class="table-modal-confirm-btn" style="flex: 2;" onclick="confirmTableAndSubmit()">
-                    <span>Valider ma Table ✅</span>
+                    <span>Confirmer ma Table</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- ================================================================
-         FLOATING BOTTOM CART BAR
+         FLOATING BOTTOM CART BAR (With vector cart icon)
          ================================================================ -->
     <div id="floating-cart-bar" class="floating-cart-bar hidden">
         <div class="cart-bar-left">
             <div class="cart-icon-badge">
-                🛒
+                <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <path d="M16 10a4 4 0 0 1-8 0"/>
+                </svg>
                 <span id="cart-badge" class="cart-counter">0</span>
             </div>
             <div class="cart-bar-info">
@@ -170,7 +211,10 @@
 
         <button class="cart-view-btn" onclick="openCartDrawer()">
             <span>Voir ma commande</span>
-            <span>➔</span>
+            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+                <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
         </button>
     </div>
 
@@ -182,7 +226,12 @@
     <aside id="cart-drawer" class="cart-drawer" aria-label="Panier">
         <div class="drawer-header">
             <h2 class="drawer-title">Votre Commande</h2>
-            <button class="drawer-close-btn" onclick="closeCartDrawer()">✕</button>
+            <button class="drawer-close-btn" onclick="closeCartDrawer()" aria-label="Fermer le panier">
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </button>
         </div>
 
         <div id="drawer-items-list" class="drawer-body"></div>
@@ -191,7 +240,7 @@
             <!-- In-Cart Table Number Input -->
             <div class="drawer-table-section">
                 <div class="drawer-table-header">
-                    <label for="cart-custom-table" class="drawer-table-title">📍 Servir à la Table</label>
+                    <label for="cart-custom-table" class="drawer-table-title">Servir à la Table</label>
                     <span id="cart-selected-table-label" style="color: var(--gold-light); font-weight: 700; font-size: 0.95rem;">Non renseigné</span>
                 </div>
                 <div class="cart-table-input-wrap">
@@ -211,18 +260,27 @@
             </div>
 
             <button class="drawer-checkout-btn" onclick="submitOrder()">
-                <span>🚀 ENVOYER LA COMMANDE</span>
+                <span>Confirmer et Envoyer la Commande</span>
+                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
             </button>
         </div>
     </aside>
 
     <!-- ================================================================
-         CUSTOMER ORDER STATUS TRACKER MODAL
+         CUSTOMER ORDER STATUS TRACKER MODAL (Vector check & steps)
          ================================================================ -->
     <div id="status-modal-overlay" class="modal-overlay">
         <div class="status-modal">
-            <div class="status-icon-anim">🎉</div>
-            <h3 class="status-title">Commande Bien Reçue !</h3>
+            <div class="status-icon-anim" style="color: var(--gold-light);">
+                <svg class="icon-svg" style="width: 48px; height: 48px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+            </div>
+            <h3 class="status-title">Commande Bien Reçue</h3>
             <p id="modal-order-meta" style="color: var(--gold-light); font-weight: 700; font-size: 1.05rem; margin-bottom: 6px;">
                 <span id="modal-order-id">#KP-000000</span> • <span id="modal-table-num">Table 4</span>
             </p>
@@ -245,8 +303,8 @@
                 </div>
             </div>
 
-            <div style="background: rgba(229, 166, 56, 0.08); border: 1px solid rgba(229, 166, 56, 0.25); border-radius: var(--radius-sm); padding: 10px 14px; margin: 16px 0; font-size: 0.88rem; color: var(--text-secondary);">
-                ☕ Le serveur vous apporte votre commande dès qu'elle est prête à votre table. Bon appétit !
+            <div style="background: rgba(229, 166, 56, 0.08); border: 1px solid rgba(229, 166, 56, 0.25); border-radius: var(--radius-sm); padding: 12px 14px; margin: 18px 0; font-size: 0.88rem; color: var(--text-secondary); line-height: 1.5;">
+                Notre équipe vous apporte votre commande dès qu'elle est prête à votre table. Bon appétit !
             </div>
 
             <button class="modal-close-btn" onclick="closeStatusModal()">Continuer sur le Menu</button>
@@ -254,6 +312,7 @@
     </div>
 
     <!-- Scripts -->
+    <script src="icons.js"></script>
     <script src="menu-data.js"></script>
     <script src="app.js"></script>
 </body>

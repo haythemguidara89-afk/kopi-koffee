@@ -1,5 +1,5 @@
 // Kopi Koffee - Customer Ordering Application Logic (app.js)
-// Elder-friendly UX, clear table management, instant cart, and live order tracking
+// Elder-friendly UX, modern luxury typography, vector icons, instant cart, and live order tracking
 
 let currentTable = localStorage.getItem('kopiCurrentTable') || '';
 let cart = JSON.parse(localStorage.getItem('kopiCart')) || [];
@@ -63,15 +63,15 @@ class SoundFX {
 }
 
 // ==========================================================================
-// TOAST NOTIFICATIONS
+// TOAST NOTIFICATIONS (Using clean vector icons)
 // ==========================================================================
-function showToast(message, icon = '✨') {
+function showToast(message, iconKey = 'sparkle') {
     const container = document.getElementById('toast-container');
     if (!container) return;
     
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    toast.innerHTML = `<span style="color: var(--gold-light); display: inline-flex; align-items: center;">${getIcon(iconKey)}</span> <span>${message}</span>`;
     container.appendChild(toast);
     
     setTimeout(() => {
@@ -170,7 +170,7 @@ function updateActiveTableDisplay() {
     }
 
     if (btnText) {
-        btnText.innerText = currentTable ? "✏️ Changer de table" : "✏️ Choisir ma table";
+        btnText.innerText = currentTable ? "Changer de table" : "Choisir ma table";
     }
 
     // Highlight active quick table button in modal
@@ -198,7 +198,7 @@ function setCartTable(num, notify = true) {
     updateCartTableUI();
 
     if (notify && currentTable) {
-        showToast(`Table ${currentTable} sélectionnée avec succès`, "📍");
+        showToast(`Table ${currentTable} sélectionnée`, "pin");
     }
 }
 
@@ -286,7 +286,7 @@ function renderMainGroups() {
     MAIN_GROUPS.forEach(group => {
         const btn = document.createElement('button');
         btn.className = `group-tab-btn ${group.id === activeMainGroup ? 'active' : ''}`;
-        btn.innerHTML = `<span>${group.icon}</span> <span>${group.name}</span>`;
+        btn.innerHTML = `<span>${getIcon(group.icon)}</span> <span>${group.name}</span>`;
         btn.addEventListener('click', () => {
             if (group.id === 'categories') {
                 backToCategories();
@@ -323,7 +323,7 @@ function selectCategory(groupId) {
 
     if (banner && group) {
         banner.style.display = 'flex';
-        if (bannerIcon) bannerIcon.innerText = group.icon;
+        if (bannerIcon) bannerIcon.innerHTML = getIcon(group.icon, 'icon-svg-lg');
         if (bannerTitle) bannerTitle.innerText = group.name;
 
         const count = MENU_ITEMS.filter(i => i.groupId === groupId).length;
@@ -380,7 +380,7 @@ function renderSubcategories() {
     const totalCount = MENU_ITEMS.filter(i => i.groupId === activeMainGroup).length;
     const allPill = document.createElement('button');
     allPill.className = `subcat-pill ${activeSubcat === 'all' ? 'active' : ''}`;
-    allPill.innerText = `Tous (${totalCount})`;
+    allPill.innerHTML = `${getIcon('sparkle')} <span>Tous (${totalCount})</span>`;
     allPill.addEventListener('click', () => {
         activeSubcat = 'all';
         renderSubcategories();
@@ -392,7 +392,7 @@ function renderSubcategories() {
         const subCount = MENU_ITEMS.filter(i => i.categoryId === sub.id).length;
         const pill = document.createElement('button');
         pill.className = `subcat-pill ${sub.id === activeSubcat ? 'active' : ''}`;
-        pill.innerHTML = `${sub.icon} ${sub.name} <span style="opacity: 0.75; font-size: 0.75rem;">(${subCount})</span>`;
+        pill.innerHTML = `${getIcon(sub.icon)} <span>${sub.name}</span> <span style="opacity: 0.75; font-size: 0.75rem;">(${subCount})</span>`;
         pill.addEventListener('click', () => {
             activeSubcat = sub.id;
             renderSubcategories();
@@ -436,11 +436,14 @@ function renderCategoryHub() {
                 <div class="category-card-badge">${badgeText}</div>
                 <div class="category-card-content">
                     <div class="category-card-header">
-                        <span class="category-card-icon">${group.icon}</span>
+                        <span class="category-card-icon" style="color: var(--gold-light);">${getIcon(group.icon, 'icon-svg-lg')}</span>
                         <h3 class="category-card-title">${group.name}</h3>
                     </div>
                     <p class="category-card-desc">${group.desc || 'Découvrez notre sélection gourmande et raffinée.'}</p>
-                    <span class="category-card-cta">Consulter la carte ➔</span>
+                    <span class="category-card-cta">
+                        <span>Consulter la carte</span>
+                        ${getIcon('arrow-right')}
+                    </span>
                 </div>
             </div>
         `;
@@ -478,11 +481,12 @@ function renderMenu() {
         if (matchingItems.length === 0) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
-                    <div style="font-size: 3rem; margin-bottom: 12px;">🔍</div>
+                    <div style="margin-bottom: 14px; color: var(--gold-light);">${getIcon('search', 'icon-svg-xl')}</div>
                     <h3 style="font-size: 1.3rem; color: var(--gold-light); margin-bottom: 8px;">Aucun produit trouvé</h3>
                     <p>Aucun article ne correspond à "${searchQuery}". Essayez avec un autre mot ou parcourez nos catégories.</p>
                     <button class="category-back-btn" style="margin-top: 18px;" onclick="backToCategories()">
-                        ← Revenir aux Catégories
+                        ${getIcon('arrow-left')}
+                        <span>Revenir aux Catégories</span>
                     </button>
                 </div>
             `;
@@ -490,7 +494,7 @@ function renderMenu() {
         }
 
         container.innerHTML = '';
-        const searchSection = createCategorySection(`Résultats pour "${searchQuery}"`, "🔎", matchingItems);
+        const searchSection = createCategorySection(`Résultats pour "${searchQuery}"`, "search", matchingItems);
         container.appendChild(searchSection);
         return;
     }
@@ -512,7 +516,7 @@ function renderMenu() {
             const bannerIcon = document.getElementById('category-banner-icon');
             const bannerTitle = document.getElementById('category-banner-title');
             const bannerCount = document.getElementById('category-banner-count');
-            if (bannerIcon) bannerIcon.innerText = group.icon;
+            if (bannerIcon) bannerIcon.innerHTML = getIcon(group.icon, 'icon-svg-lg');
             if (bannerTitle) bannerTitle.innerText = group.name;
             const count = MENU_ITEMS.filter(i => i.groupId === activeMainGroup).length;
             if (bannerCount) bannerCount.innerText = `${count} délices au menu`;
@@ -531,10 +535,11 @@ function renderMenu() {
     if (filteredItems.length === 0) {
         container.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
-                <div style="font-size: 3rem; margin-bottom: 12px;">🍽️</div>
+                <div style="margin-bottom: 14px; color: var(--gold-light);">${getIcon('plate', 'icon-svg-xl')}</div>
                 <h3 style="font-size: 1.3rem; color: var(--gold-light); margin-bottom: 8px;">Aucun produit dans cette sous-catégorie</h3>
                 <button class="category-back-btn" style="margin-top: 14px;" onclick="backToCategories()">
-                    ← Revenir aux Catégories
+                    ${getIcon('arrow-left')}
+                    <span>Revenir aux Catégories</span>
                 </button>
             </div>
         `;
@@ -553,23 +558,23 @@ function renderMenu() {
             });
         } else {
             const currentGroup = MAIN_GROUPS.find(g => g.id === activeMainGroup);
-            const section = createCategorySection(currentGroup ? currentGroup.name : "Menu", currentGroup ? currentGroup.icon : "✨", filteredItems);
+            const section = createCategorySection(currentGroup ? currentGroup.name : "Menu", currentGroup ? currentGroup.icon : "sparkle", filteredItems);
             container.appendChild(section);
         }
     } else {
         const cat = MENU_CATEGORIES.find(c => c.id === activeSubcat);
-        const section = createCategorySection(cat ? cat.name : "Sélection", cat ? cat.icon : "✨", filteredItems);
+        const section = createCategorySection(cat ? cat.name : "Sélection", cat ? cat.icon : "sparkle", filteredItems);
         container.appendChild(section);
     }
 }
 
-function createCategorySection(title, icon, items) {
+function createCategorySection(title, iconKey, items) {
     const section = document.createElement('div');
     section.className = 'category-section';
 
     section.innerHTML = `
         <div class="section-header">
-            <span style="font-size: 1.4rem;">${icon}</span>
+            <span style="display: inline-flex; align-items: center; color: var(--gold-light);">${getIcon(iconKey, 'icon-svg-lg')}</span>
             <h2 class="section-title">${title}</h2>
             <span class="section-count">${items.length} articles</span>
         </div>
@@ -597,6 +602,10 @@ function createProductCard(item) {
         ? `<div class="card-badge">${item.badge}</div>` 
         : '';
 
+    const addBtnContent = qtyInCart > 0 
+        ? `${getIcon('check')} <span>Ajouté (${qtyInCart})</span>`
+        : `${getIcon('plus')} <span>Ajouter</span>`;
+
     card.innerHTML = `
         <div class="card-image-wrap">
             <img class="card-img" src="${item.image}" alt="${item.name}" loading="lazy" 
@@ -611,12 +620,16 @@ function createProductCard(item) {
             <p class="card-desc">${item.description}</p>
             <div class="card-actions">
                 <div class="card-stepper">
-                    <button class="step-btn" onclick="changeCardQuantity('${item.id}', -1)" aria-label="Moins">-</button>
+                    <button class="step-btn" onclick="changeCardQuantity('${item.id}', -1)" aria-label="Moins">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
                     <span class="step-qty" id="qty-${item.id}">${qtyInCart > 0 ? qtyInCart : 1}</span>
-                    <button class="step-btn" onclick="changeCardQuantity('${item.id}', 1)" aria-label="Plus">+</button>
+                    <button class="step-btn" onclick="changeCardQuantity('${item.id}', 1)" aria-label="Plus">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                    </button>
                 </div>
                 <button class="add-btn" onclick="addFromCard('${item.id}')">
-                    <span>${qtyInCart > 0 ? '✓ Ajouté (' + qtyInCart + ')' : '+ Ajouter'}</span>
+                    ${addBtnContent}
                 </button>
             </div>
         </div>
@@ -649,7 +662,7 @@ function addFromCard(itemId) {
     if (qtySpan) qtySpan.innerText = 1;
 
     SoundFX.itemAdded();
-    showToast(`${qty}x ${item.name} ajouté au panier`, "🛒");
+    showToast(`${qty}x ${item.name} ajouté au panier`, "cart");
 }
 
 // ==========================================================================
@@ -747,7 +760,7 @@ function renderCartDrawerItems() {
     if (cart.length === 0) {
         body.innerHTML = `
             <div class="cart-empty-message">
-                <div style="font-size: 2.5rem; margin-bottom: 8px;">☕</div>
+                <div style="margin-bottom: 12px; color: var(--gold-light);">${getIcon('coffee', 'icon-svg-xl')}</div>
                 <p>Votre panier est vide pour le moment.</p>
                 <p style="font-size: 0.85rem; margin-top: 6px; color: var(--gold-light);">Sélectionnez vos boissons ou plats préférés pour commencer !</p>
             </div>
@@ -773,11 +786,17 @@ function renderCartDrawerItems() {
                 <div class="cart-item-price">${itemTotal.toFixed(1)} DT <span style="font-size: 0.75rem; color: var(--text-muted);">(${item.price} DT/u)</span></div>
             </div>
             <div class="card-stepper" style="background: rgba(0,0,0,0.45);">
-                <button class="step-btn" onclick="updateCartQuantity('${item.id}', -1)" aria-label="Moins">-</button>
+                <button class="step-btn" onclick="updateCartQuantity('${item.id}', -1)" aria-label="Moins">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
                 <span class="step-qty">${item.quantity}</span>
-                <button class="step-btn" onclick="updateCartQuantity('${item.id}', 1)" aria-label="Plus">+</button>
+                <button class="step-btn" onclick="updateCartQuantity('${item.id}', 1)" aria-label="Plus">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                </button>
             </div>
-            <button class="cart-item-remove" onclick="removeFromCart('${item.id}')" title="Supprimer">🗑️</button>
+            <button class="cart-item-remove" onclick="removeFromCart('${item.id}')" title="Supprimer" aria-label="Supprimer">
+                ${getIcon('trash')}
+            </button>
         `;
         body.appendChild(row);
     });

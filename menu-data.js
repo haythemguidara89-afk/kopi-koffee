@@ -5,12 +5,12 @@ const MAIN_GROUPS = [
     { 
         id: "categories", 
         name: "Toutes les Catégories", 
-        icon: "📋" 
+        icon: "grid" 
     },
     { 
         id: "petit-dejeuner", 
         name: "Petit Déjeuner & Brunch", 
-        icon: "🥐",
+        icon: "breakfast",
         desc: "Formules complètes, viennoiseries dorées, œufs & délices matinaux",
         image: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80",
         badge: "7 formules"
@@ -18,7 +18,7 @@ const MAIN_GROUPS = [
     { 
         id: "cafes-chauds-groupe", 
         name: "Cafés & Boissons Chaudes", 
-        icon: "☕",
+        icon: "coffee",
         desc: "Espressos d'exception, cafés frappés & glacés, thés fins & chocolat chaud",
         image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
         badge: "32 délices"
@@ -26,7 +26,7 @@ const MAIN_GROUPS = [
     { 
         id: "jus-boissons", 
         name: "Jus & Boissons Fraîches", 
-        icon: "🍊",
+        icon: "drink",
         desc: "Jus d'oranges pressés à la minute, cocktails vitaminés, thés glacés & sodas",
         image: "https://images.unsplash.com/photo-1613478223719-2ab802602423?auto=format&fit=crop&w=800&q=80",
         badge: "24 boissons"
@@ -34,7 +34,7 @@ const MAIN_GROUPS = [
     { 
         id: "shakes-mojitos", 
         name: "Smoothies, Shakes & Mojitos", 
-        icon: "🍹",
+        icon: "cocktail",
         desc: "Milkshakes onctueux, smoothies 100% fruits, mojitos rafraîchissants",
         image: "https://images.unsplash.com/photo-1572490122747-3968b75cc699?auto=format&fit=crop&w=800&q=80",
         badge: "21 créations"
@@ -42,7 +42,7 @@ const MAIN_GROUPS = [
     { 
         id: "crepes-gaufres", 
         name: "Crêpes, Gaufres & Pancakes", 
-        icon: "🥞",
+        icon: "dessert",
         desc: "Crêpes salées gourmandes, crêpes sucrées, gaufres liégeoises & pancakes",
         image: "https://images.unsplash.com/photo-1519676867240-f03562e64548?auto=format&fit=crop&w=800&q=80",
         badge: "20 spécialités"
@@ -50,7 +50,7 @@ const MAIN_GROUPS = [
     { 
         id: "sale-restauration", 
         name: "Salé & Restauration", 
-        icon: "🍔",
+        icon: "snack",
         desc: "Paninis croustillants, burgers gourmets au bœuf ou poulet, omelettes maison",
         image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=800&q=80",
         badge: "13 plats"
@@ -58,7 +58,7 @@ const MAIN_GROUPS = [
     { 
         id: "desserts-glaces", 
         name: "Desserts & Glaces", 
-        icon: "🍰",
+        icon: "dessert",
         desc: "Pâtisseries artisanales, cheesecakes, moelleux & coupes glacées parfumées",
         image: "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=800&q=80",
         badge: "7 douceurs"
@@ -66,7 +66,7 @@ const MAIN_GROUPS = [
     { 
         id: "chicha-groupe", 
         name: "Espace Chicha", 
-        icon: "💨",
+        icon: "lounge",
         desc: "Chicha classique et chicha fraîcheur au glaçon, parfums variés",
         image: "https://images.unsplash.com/photo-1542385151-efd9000785a0?auto=format&fit=crop&w=800&q=80",
         badge: "Lounge"
@@ -74,46 +74,46 @@ const MAIN_GROUPS = [
 ];
 
 const MENU_CATEGORIES = [
-    { id: "all", name: "Tout", groupId: "all", icon: "✨" },
+    { id: "all", name: "Tout", groupId: "all", icon: "sparkle" },
     
     // Petit Déjeuner
-    { id: "petit-dejeuner", name: "Formules Petit Déjeuner", groupId: "petit-dejeuner", icon: "🥐" },
+    { id: "petit-dejeuner", name: "Formules Petit Déjeuner", groupId: "petit-dejeuner", icon: "breakfast" },
     
     // Cafés & Boissons Chaudes
-    { id: "cafes-chauds", name: "Cafés Chauds", groupId: "cafes-chauds-groupe", icon: "☕" },
-    { id: "cafes-frappes", name: "Cafés Frappés", groupId: "cafes-chauds-groupe", icon: "🥤" },
-    { id: "cafes-glaces", name: "Cafés Glacés", groupId: "cafes-chauds-groupe", icon: "🧊" },
-    { id: "thes", name: "Thés & Infusions", groupId: "cafes-chauds-groupe", icon: "🫖" },
-    { id: "chocolat-chaud", name: "Chocolat Chaud", groupId: "cafes-chauds-groupe", icon: "🍫" },
+    { id: "cafes-chauds", name: "Cafés Chauds", groupId: "cafes-chauds-groupe", icon: "coffee" },
+    { id: "cafes-frappes", name: "Cafés Frappés", groupId: "cafes-chauds-groupe", icon: "coffee" },
+    { id: "cafes-glaces", name: "Cafés Glacés", groupId: "cafes-chauds-groupe", icon: "drink" },
+    { id: "thes", name: "Thés & Infusions", groupId: "cafes-chauds-groupe", icon: "tea" },
+    { id: "chocolat-chaud", name: "Chocolat Chaud", groupId: "cafes-chauds-groupe", icon: "cup" },
 
     // Jus & Boissons Fraîches
-    { id: "jus", name: "Jus Frais Pressés", groupId: "jus-boissons", icon: "🍊" },
-    { id: "cocktails", name: "Cocktails de Fruits", groupId: "jus-boissons", icon: "🍓" },
-    { id: "thes-glaces", name: "Thés Glacés", groupId: "jus-boissons", icon: "🍹" },
-    { id: "boissons", name: "Eaux & Sodas", groupId: "jus-boissons", icon: "🥤" },
+    { id: "jus", name: "Jus Frais Pressés", groupId: "jus-boissons", icon: "drink" },
+    { id: "cocktails", name: "Cocktails de Fruits", groupId: "jus-boissons", icon: "cocktail" },
+    { id: "thes-glaces", name: "Thés Glacés", groupId: "jus-boissons", icon: "tea" },
+    { id: "boissons", name: "Eaux & Sodas", groupId: "jus-boissons", icon: "drink" },
 
     // Smoothies, Shakes & Mojitos
-    { id: "smoothies", name: "Smoothies Pur Fruit", groupId: "shakes-mojitos", icon: "🥭" },
-    { id: "milkshakes", name: "Milk-shakes Gourmands", groupId: "shakes-mojitos", icon: "🍦" },
-    { id: "mojitos", name: "Mojitos Frais", groupId: "shakes-mojitos", icon: "🍸" },
-    { id: "soft-cocktails", name: "Soft Cocktails", groupId: "shakes-mojitos", icon: "🍹" },
+    { id: "smoothies", name: "Smoothies Pur Fruit", groupId: "shakes-mojitos", icon: "drink" },
+    { id: "milkshakes", name: "Milk-shakes Gourmands", groupId: "shakes-mojitos", icon: "dessert" },
+    { id: "mojitos", name: "Mojitos Frais", groupId: "shakes-mojitos", icon: "cocktail" },
+    { id: "soft-cocktails", name: "Soft Cocktails", groupId: "shakes-mojitos", icon: "cocktail" },
 
     // Crêpes & Gaufres
-    { id: "crepes-salees", name: "Crêpes Salées", groupId: "crepes-gaufres", icon: "🧀" },
-    { id: "crepes-sucrees", name: "Crêpes Sucrées", groupId: "crepes-gaufres", icon: "🥞" },
-    { id: "gaufres", name: "Gaufres Liégeoises", groupId: "crepes-gaufres", icon: "🧇" },
-    { id: "pancakes", name: "Pancakes Américains", groupId: "crepes-gaufres", icon: "🥞" },
+    { id: "crepes-salees", name: "Crêpes Salées", groupId: "crepes-gaufres", icon: "dessert" },
+    { id: "crepes-sucrees", name: "Crêpes Sucrées", groupId: "crepes-gaufres", icon: "dessert" },
+    { id: "gaufres", name: "Gaufres Liégeoises", groupId: "crepes-gaufres", icon: "dessert" },
+    { id: "pancakes", name: "Pancakes Américains", groupId: "crepes-gaufres", icon: "dessert" },
 
     // Salé & Restauration
-    { id: "paninis", name: "Paninis Croustillants", groupId: "sale-restauration", icon: "🥪" },
-    { id: "hamburgers", name: "Burgers Gourmets", groupId: "sale-restauration", icon: "🍔" },
-    { id: "omelettes", name: "Omelettes Maison", groupId: "sale-restauration", icon: "🍳" },
+    { id: "paninis", name: "Paninis Croustillants", groupId: "sale-restauration", icon: "snack" },
+    { id: "hamburgers", name: "Burgers Gourmets", groupId: "sale-restauration", icon: "snack" },
+    { id: "omelettes", name: "Omelettes Maison", groupId: "sale-restauration", icon: "breakfast" },
 
     // Desserts
-    { id: "desserts", name: "Pâtisseries & Glaces", groupId: "desserts-glaces", icon: "🍰" },
+    { id: "desserts", name: "Pâtisseries & Glaces", groupId: "desserts-glaces", icon: "dessert" },
 
     // Chicha
-    { id: "chicha", name: "Chicha & Chicha Glaçon", groupId: "chicha-groupe", icon: "💨" }
+    { id: "chicha", name: "Chicha & Chicha Glaçon", groupId: "chicha-groupe", icon: "lounge" }
 ];
 
 const MENU_ITEMS = [

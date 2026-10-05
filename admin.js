@@ -1,5 +1,5 @@
 // Kopi Koffee - Dedicated Admin & Kitchen Display System Logic (admin.js)
-// Password: 10699 • Real-Time Order Processing & KDS Dashboard
+// Password: 10699 • Real-Time Order Processing & Modern KDS Dashboard (Vector Icons)
 
 const ADMIN_PASSWORD = "10699";
 
@@ -65,20 +65,20 @@ class SoundFX {
 }
 
 // ==========================================================================
-// TOAST NOTIFICATIONS
+// TOAST NOTIFICATIONS (Using clean vector icons)
 // ==========================================================================
-function showToast(message, icon = '✨') {
+function showToast(message, iconKey = 'sparkle') {
     const container = document.getElementById('toast-container');
     if (!container) return;
     
     const toast = document.createElement('div');
     toast.className = 'toast';
-    toast.innerHTML = `<span>${icon}</span> <span>${message}</span>`;
+    toast.innerHTML = `<span style="color: var(--gold-light); display: inline-flex; align-items: center;">${getIcon(iconKey)}</span> <span>${message}</span>`;
     container.appendChild(toast);
     
     setTimeout(() => {
         if (toast.parentNode) toast.parentNode.removeChild(toast);
-    }, 3000);
+    }, 2800);
 }
 
 // ==========================================================================
@@ -137,7 +137,7 @@ function showKDSView() {
 
 function logoutAdmin() {
     sessionStorage.removeItem('kopiStaffAuth');
-    showToast("Session cuisine verrouillée", "🔒");
+    showToast("Session cuisine verrouillée", "lock");
     showAuthView();
 }
 
@@ -178,7 +178,7 @@ function submitCurrentPin() {
     if (enteredPin === ADMIN_PASSWORD) {
         sessionStorage.setItem('kopiStaffAuth', 'true');
         SoundFX.actionSuccess();
-        showToast("Accès autorisé • Bienvenue", "👨‍🍳");
+        showToast("Accès autorisé • Bienvenue", "chef");
         showKDSView();
     } else {
         handleAuthError("Code PIN incorrect. Veuillez réessayer.");
@@ -192,7 +192,7 @@ function submitDirectPassword() {
         sessionStorage.setItem('kopiStaffAuth', 'true');
         if (input) input.value = '';
         SoundFX.actionSuccess();
-        showToast("Accès autorisé • Bienvenue", "👨‍🍳");
+        showToast("Accès autorisé • Bienvenue", "chef");
         showKDSView();
     } else {
         handleAuthError("Mot de passe incorrect.");
@@ -264,10 +264,10 @@ function updateSoundButtonUI() {
     if (!btn) return;
     if (soundEnabled) {
         btn.classList.add('sound-on');
-        btn.innerHTML = `🔔 Son Activé`;
+        btn.innerHTML = `${getIcon('bell')} <span>Son Activé</span>`;
     } else {
         btn.classList.remove('sound-on');
-        btn.innerHTML = `🔕 Son Coupé`;
+        btn.innerHTML = `${getIcon('bell-off')} <span>Son Coupé</span>`;
     }
 }
 
@@ -278,7 +278,7 @@ function handleIncomingOrdersUpdate() {
     const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
     if (orders.length > lastKnownOrderCount) {
         SoundFX.newOrderAlert();
-        showToast("🔔 Nouvelle commande reçue !", "🛎️");
+        showToast("Nouvelle commande reçue en cuisine !", "bell");
     }
     lastKnownOrderCount = orders.length;
     renderAdminKDS();
@@ -288,7 +288,7 @@ function checkOrdersPoll() {
     const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
     if (orders.length > lastKnownOrderCount) {
         SoundFX.newOrderAlert();
-        showToast("🔔 Nouvelle commande reçue !", "🛎️");
+        showToast("Nouvelle commande reçue en cuisine !", "bell");
         lastKnownOrderCount = orders.length;
         renderAdminKDS();
     }
@@ -323,7 +323,7 @@ function renderAdminKDS() {
     if (filteredOrders.length === 0) {
         container.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--text-muted); background: var(--bg-card); border-radius: var(--radius-md); border: 1px dashed var(--gold-border);">
-                <div style="font-size: 3rem; margin-bottom: 10px;">🍽️</div>
+                <div style="margin-bottom: 12px; color: var(--gold-light);">${getIcon('tray', 'icon-svg-xl')}</div>
                 <h3 style="color: var(--gold-light); font-size: 1.3rem; margin-bottom: 6px;">Aucune commande dans cette section</h3>
                 <p>Toutes les commandes ont été traitées ou aucune commande reçue.</p>
             </div>
@@ -339,23 +339,41 @@ function renderAdminKDS() {
         let statusBadgeText = "En attente";
         let statusBadgeClass = "status-badge-pending";
         let actionButtons = `
-            <button class="kds-btn btn-prep" onclick="updateOrderStatus('${order.id}', 'preparing')">👨‍🍳 Préparer</button>
-            <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">🖨️ Ticket</button>
+            <button class="kds-btn btn-prep" onclick="updateOrderStatus('${order.id}', 'preparing')">
+                ${getIcon('chef')}
+                <span>Préparer</span>
+            </button>
+            <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">
+                ${getIcon('print')}
+                <span>Ticket</span>
+            </button>
         `;
 
         if (order.status === 'preparing') {
             statusBadgeText = "En préparation";
             statusBadgeClass = "status-badge-preparing";
             actionButtons = `
-                <button class="kds-btn btn-ready" onclick="updateOrderStatus('${order.id}', 'completed')">✓ Marquer Servi</button>
-                <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">🖨️ Ticket</button>
+                <button class="kds-btn btn-ready" onclick="updateOrderStatus('${order.id}', 'completed')">
+                    ${getIcon('check')}
+                    <span>Marquer Servi</span>
+                </button>
+                <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">
+                    ${getIcon('print')}
+                    <span>Ticket</span>
+                </button>
             `;
         } else if (order.status === 'completed') {
             statusBadgeText = "Prête / Servie";
             statusBadgeClass = "status-badge-completed";
             actionButtons = `
-                <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">🖨️ Ticket</button>
-                <button class="kds-btn btn-delete" onclick="deleteOrder('${order.id}')">🗑️ Archiver</button>
+                <button class="kds-btn btn-print" onclick="printReceipt('${order.id}')">
+                    ${getIcon('print')}
+                    <span>Ticket</span>
+                </button>
+                <button class="kds-btn btn-delete" onclick="deleteOrder('${order.id}')">
+                    ${getIcon('trash')}
+                    <span>Archiver</span>
+                </button>
             `;
         }
 
@@ -367,7 +385,7 @@ function renderAdminKDS() {
         `).join('');
 
         const noteBlock = order.notes 
-            ? `<div class="order-note-box"><strong>📍 Instruction client :</strong> ${order.notes}</div>` 
+            ? `<div class="order-note-box"><strong>Instruction client :</strong> ${order.notes}</div>` 
             : '';
 
         card.innerHTML = `
@@ -405,7 +423,7 @@ function updateOrderStatus(orderId, newStatus) {
         localStorage.setItem('kopiOrders', JSON.stringify(orders));
         SoundFX.actionSuccess();
         renderAdminKDS();
-        showToast(`Commande ${orderId} passée à : ${newStatus}`, "✅");
+        showToast(`Commande ${orderId} : ${newStatus}`, "check");
     }
 }
 
@@ -415,7 +433,7 @@ function deleteOrder(orderId) {
     orders = orders.filter(o => o.id !== orderId);
     localStorage.setItem('kopiOrders', JSON.stringify(orders));
     renderAdminKDS();
-    showToast("Commande archivée", "📁");
+    showToast("Commande archivée", "trash");
 }
 
 function setAdminFilter(filter) {
@@ -434,7 +452,7 @@ function clearAllOrders() {
     if (!confirm("Attention : Voulez-vous vraiment effacer l'historique complet des commandes d'aujourd'hui ?")) return;
     localStorage.setItem('kopiOrders', JSON.stringify([]));
     renderAdminKDS();
-    showToast("Toutes les commandes ont été effacées", "🧹");
+    showToast("Toutes les commandes ont été effacées", "broom");
 }
 
 // ==========================================================================
