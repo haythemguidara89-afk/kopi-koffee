@@ -80,9 +80,10 @@ function showToast(message, iconKey = 'sparkle') {
 }
 
 // ==========================================================================
-// INITIALIZATION
+// INITIALIZATION & I18N SUPPORT
 // ==========================================================================
 document.addEventListener('DOMContentLoaded', () => {
+    updateStaticTranslations();
     updateActiveTableDisplay();
     updateCartTableUI();
     renderMainGroups();
@@ -90,6 +91,18 @@ document.addEventListener('DOMContentLoaded', () => {
     renderMenu();
     updateCartUI();
     checkCustomerOrderStatus();
+
+    // Listen to global language change event (FR / AR)
+    window.addEventListener('kopiLangChanged', () => {
+        updateStaticTranslations();
+        updateActiveTableDisplay();
+        updateCartTableUI();
+        renderMainGroups();
+        renderSubcategories();
+        renderMenu();
+        renderCartDrawerItems();
+        updateCartUI();
+    });
 
     // Table modal input listeners
     const modalCustomInput = document.getElementById('table-modal-custom');
@@ -154,28 +167,107 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 2500);
 });
 
+function updateStaticTranslations() {
+    if (typeof KOPI_I18N === 'undefined') return;
+    const t = (k) => KOPI_I18N.t(k);
+
+    const headerStatus = document.getElementById('header-status-text');
+    if (headerStatus) headerStatus.innerText = t('store_status');
+
+    const headerSubtitle = document.getElementById('header-subtitle-text');
+    if (headerSubtitle) headerSubtitle.innerText = t('brand_subtitle');
+
+    const stripLabel = document.querySelector('.table-strip-label');
+    if (stripLabel) stripLabel.innerText = t('table_service');
+
+    const searchInput = document.getElementById('menu-search');
+    if (searchInput) searchInput.placeholder = t('search_placeholder');
+
+    const floatingLabel = document.querySelector('.cart-bar-label');
+    if (floatingLabel) floatingLabel.innerText = t('floating_cart_label');
+
+    const floatingBtn = document.querySelector('.cart-view-btn span');
+    if (floatingBtn) floatingBtn.innerText = t('floating_cart_btn');
+
+    const drawerTitle = document.querySelector('.drawer-title');
+    if (drawerTitle) drawerTitle.innerText = t('cart_title');
+
+    const drawerTableTitle = document.querySelector('.drawer-table-title');
+    if (drawerTableTitle) drawerTableTitle.innerText = t('serve_to_table');
+
+    const tableInputPrefix = document.querySelector('.table-input-prefix');
+    if (tableInputPrefix) tableInputPrefix.innerText = t('table_number_prefix');
+
+    const customTableInput = document.getElementById('cart-custom-table');
+    if (customTableInput) customTableInput.placeholder = t('table_number_placeholder');
+
+    const drawerNotesLabel = document.querySelector('.drawer-notes label');
+    if (drawerNotesLabel) drawerNotesLabel.innerText = t('order_notes_label');
+
+    const orderNotes = document.getElementById('order-special-notes');
+    if (orderNotes) orderNotes.placeholder = t('order_notes_placeholder');
+
+    const drawerTotalLabel = document.querySelector('.drawer-summary-row span:first-child');
+    if (drawerTotalLabel) drawerTotalLabel.innerText = t('total_to_pay');
+
+    const drawerCheckoutBtn = document.querySelector('.drawer-checkout-btn span');
+    if (drawerCheckoutBtn) drawerCheckoutBtn.innerText = t('checkout_btn');
+
+    const modalTitle = document.querySelector('#table-modal-overlay .modal-title');
+    if (modalTitle) modalTitle.innerText = t('modal_table_title');
+
+    const modalDesc = document.querySelector('#table-modal-overlay .modal-desc');
+    if (modalDesc) modalDesc.innerText = t('modal_table_desc');
+
+    const modalConfirmBtn = document.querySelector('#table-modal-overlay .modal-confirm-btn');
+    if (modalConfirmBtn) modalConfirmBtn.innerText = t('modal_table_confirm');
+
+    const modalCancelBtn = document.querySelector('#table-modal-overlay .modal-cancel-btn');
+    if (modalCancelBtn) modalCancelBtn.innerText = t('modal_table_cancel');
+
+    const modalQuickLabel = document.querySelector('#table-modal-overlay .modal-subtitle');
+    if (modalQuickLabel) modalQuickLabel.innerText = t('modal_table_quick');
+
+    const statusModalTitle = document.querySelector('#status-modal-overlay .status-title');
+    if (statusModalTitle) statusModalTitle.innerText = t('order_received_title');
+
+    const stepRec = document.querySelector('#step-received .step-label');
+    if (stepRec) stepRec.innerText = t('step_received');
+
+    const stepKit = document.querySelector('#step-prep .step-label');
+    if (stepKit) stepKit.innerText = t('step_kitchen');
+
+    const stepSrv = document.querySelector('#step-ready .step-label');
+    if (stepSrv) stepSrv.innerText = t('step_served');
+
+    const statusCloseBtn = document.querySelector('#status-modal-overlay .modal-close-btn');
+    if (statusCloseBtn) statusCloseBtn.innerText = t('continue_menu');
+}
+
 // ==========================================================================
 // ELDER-FRIENDLY TABLE MANAGEMENT
 // ==========================================================================
 function updateActiveTableDisplay() {
     const display = document.getElementById('active-table-display');
     const btnText = document.getElementById('table-btn-text');
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
 
     if (display) {
         if (currentTable) {
-            display.innerHTML = `<span style="color: var(--gold-light); font-weight: 800;">Table ${currentTable}</span> • Service direct à votre place`;
+            const tablePrefix = t('table_selected_prefix');
+            display.innerHTML = `<span style="color: var(--gold-light); font-weight: 800;">${tablePrefix} ${currentTable}</span> • ${t('table_service')}`;
         } else {
-            display.innerText = "Table non renseignée • Toucher ici pour choisir";
+            display.innerText = t('table_not_set');
         }
     }
 
     if (btnText) {
-        btnText.innerText = currentTable ? "Changer de table" : "Choisir ma table";
+        btnText.innerText = currentTable ? t('table_change_btn') : t('table_choose_btn');
     }
 
     // Highlight active quick table button in modal
     document.querySelectorAll('.quick-table-btn').forEach(btn => {
-        const tableNum = btn.innerText.replace('Table ', '').trim();
+        const tableNum = btn.innerText.replace(/[^0-9]/g, '').trim();
         if (tableNum === currentTable) {
             btn.classList.add('active');
         } else {
@@ -198,7 +290,10 @@ function setCartTable(num, notify = true) {
     updateCartTableUI();
 
     if (notify && currentTable) {
-        showToast(`Table ${currentTable} sélectionnée`, "pin");
+        const msg = (typeof KOPI_I18N !== 'undefined') 
+            ? KOPI_I18N.t('toast_table_selected').replace('{num}', currentTable)
+            : `Table ${currentTable} sélectionnée`;
+        showToast(msg, "pin");
     }
 }
 
@@ -212,13 +307,14 @@ function selectQuickTable(num) {
 function updateCartTableUI() {
     const label = document.getElementById('cart-selected-table-label');
     const customInput = document.getElementById('cart-custom-table');
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
 
     if (label) {
         if (currentTable) {
-            label.innerText = `Table ${currentTable}`;
+            label.innerText = `${t('table_selected_prefix')} ${currentTable}`;
             label.style.color = 'var(--gold-primary)';
         } else {
-            label.innerText = 'Non renseigné';
+            label.innerText = t('table_not_specified');
             label.style.color = 'var(--text-muted)';
         }
     }
@@ -259,7 +355,10 @@ function confirmTableAndSubmit() {
     const customVal = customInput ? customInput.value.trim() : '';
 
     if (!customVal && !currentTable) {
-        alert("Veuillez sélectionner ou indiquer le numéro de votre table.");
+        const alertMsg = (typeof KOPI_I18N !== 'undefined')
+            ? KOPI_I18N.t('alert_choose_table')
+            : "Veuillez sélectionner ou indiquer le numéro de votre table.";
+        alert(alertMsg);
         if (customInput) customInput.focus();
         return;
     }
@@ -284,9 +383,12 @@ function renderMainGroups() {
 
     scroller.innerHTML = '';
     MAIN_GROUPS.forEach(group => {
+        const groupName = (typeof KOPI_I18N !== 'undefined')
+            ? KOPI_I18N.getCategoryName(group.id, group.name)
+            : group.name;
         const btn = document.createElement('button');
         btn.className = `group-tab-btn ${group.id === activeMainGroup ? 'active' : ''}`;
-        btn.innerHTML = `<span>${getIcon(group.icon)}</span> <span>${group.name}</span>`;
+        btn.innerHTML = `<span>${getIcon(group.icon)}</span> <span>${groupName}</span>`;
         btn.addEventListener('click', () => {
             if (group.id === 'categories') {
                 backToCategories();
@@ -323,11 +425,18 @@ function selectCategory(groupId) {
 
     if (banner && group) {
         banner.style.display = 'flex';
+        const groupName = (typeof KOPI_I18N !== 'undefined')
+            ? KOPI_I18N.getCategoryName(group.id, group.name)
+            : group.name;
+        const countSuffix = (typeof KOPI_I18N !== 'undefined')
+            ? KOPI_I18N.t('delights_count')
+            : 'délices au menu';
+
         if (bannerIcon) bannerIcon.innerHTML = getIcon(group.icon, 'icon-svg-lg');
-        if (bannerTitle) bannerTitle.innerText = group.name;
+        if (bannerTitle) bannerTitle.innerText = groupName;
 
         const count = MENU_ITEMS.filter(i => i.groupId === groupId).length;
-        if (bannerCount) bannerCount.innerText = `${count} délices au menu`;
+        if (bannerCount) bannerCount.innerText = `${count} ${countSuffix}`;
     }
 
     renderMainGroups();
@@ -378,9 +487,10 @@ function renderSubcategories() {
     container.style.display = 'flex';
 
     const totalCount = MENU_ITEMS.filter(i => i.groupId === activeMainGroup).length;
+    const allLabel = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.t('all_items') : 'Tous';
     const allPill = document.createElement('button');
     allPill.className = `subcat-pill ${activeSubcat === 'all' ? 'active' : ''}`;
-    allPill.innerHTML = `${getIcon('sparkle')} <span>Tous (${totalCount})</span>`;
+    allPill.innerHTML = `${getIcon('sparkle')} <span>${allLabel} (${totalCount})</span>`;
     allPill.addEventListener('click', () => {
         activeSubcat = 'all';
         renderSubcategories();
@@ -390,9 +500,12 @@ function renderSubcategories() {
 
     subcats.forEach(sub => {
         const subCount = MENU_ITEMS.filter(i => i.categoryId === sub.id).length;
+        const subName = (typeof KOPI_I18N !== 'undefined')
+            ? KOPI_I18N.getCategoryName(sub.id, sub.name)
+            : sub.name;
         const pill = document.createElement('button');
         pill.className = `subcat-pill ${sub.id === activeSubcat ? 'active' : ''}`;
-        pill.innerHTML = `${getIcon(sub.icon)} <span>${sub.name}</span> <span style="opacity: 0.75; font-size: 0.75rem;">(${subCount})</span>`;
+        pill.innerHTML = `${getIcon(sub.icon)} <span>${subName}</span> <span style="opacity: 0.75; font-size: 0.75rem;">(${subCount})</span>`;
         pill.addEventListener('click', () => {
             activeSubcat = sub.id;
             renderSubcategories();
@@ -423,25 +536,29 @@ function renderCategoryHub() {
     if (!container) return;
 
     const diningGroups = MAIN_GROUPS.filter(g => g.id !== 'categories');
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
 
     let cardsHtml = diningGroups.map(group => {
         const count = MENU_ITEMS.filter(item => item.groupId === group.id).length;
-        const badgeText = group.badge || `${count} articles`;
+        const groupName = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getCategoryName(group.id, group.name) : group.name;
+        const groupDesc = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getCategoryDesc(group.id, group.desc) : (group.desc || 'Découvrez notre sélection gourmande et raffinée.');
+        const badgeText = group.badge || `${count} ${t('items_count')}`;
+
         return `
             <div class="category-card" onclick="selectCategory('${group.id}')" role="button" tabindex="0" 
-                 onkeydown="if(event.key==='Enter') selectCategory('${group.id}')" aria-label="${group.name}">
-                <img class="category-card-img" src="${group.image}" alt="${group.name}" loading="lazy" 
+                 onkeydown="if(event.key==='Enter') selectCategory('${group.id}')" aria-label="${groupName}">
+                <img class="category-card-img" src="${group.image}" alt="${groupName}" loading="lazy" 
                      onerror="this.src='https://images.unsplash.com/photo-1509785307050-d4066910ec1e?auto=format&fit=crop&w=600&q=80'">
                 <div class="category-card-overlay"></div>
                 <div class="category-card-badge">${badgeText}</div>
                 <div class="category-card-content">
                     <div class="category-card-header">
                         <span class="category-card-icon" style="color: var(--gold-light);">${getIcon(group.icon, 'icon-svg-lg')}</span>
-                        <h3 class="category-card-title">${group.name}</h3>
+                        <h3 class="category-card-title">${groupName}</h3>
                     </div>
-                    <p class="category-card-desc">${group.desc || 'Découvrez notre sélection gourmande et raffinée.'}</p>
+                    <p class="category-card-desc">${groupDesc}</p>
                     <span class="category-card-cta">
-                        <span>Consulter la carte</span>
+                        <span>${t('browse_menu')}</span>
                         ${getIcon('arrow-right')}
                     </span>
                 </div>
@@ -452,8 +569,8 @@ function renderCategoryHub() {
     container.innerHTML = `
         <div class="category-hub">
             <div class="category-hub-intro">
-                <h2 class="category-hub-title">Carte des Délices Kopi Koffee</h2>
-                <p class="category-hub-subtitle">Appuyez simplement sur une catégorie pour afficher nos cafés, délices et formules préparés à la commande</p>
+                <h2 class="category-hub-title">${t('hub_title')}</h2>
+                <p class="category-hub-subtitle">${t('hub_subtitle')}</p>
             </div>
             <div class="category-hub-grid">
                 ${cardsHtml}
@@ -467,26 +584,30 @@ function renderMenu() {
     const banner = document.getElementById('category-banner');
     if (!container) return;
 
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+
     // Search Mode takes precedence
     if (searchQuery) {
         if (banner) banner.style.display = 'none';
         const subcatsContainer = document.getElementById('subcategories-container');
         if (subcatsContainer) subcatsContainer.style.display = 'none';
 
-        const matchingItems = MENU_ITEMS.filter(item => 
-            item.name.toLowerCase().includes(searchQuery) ||
-            item.description.toLowerCase().includes(searchQuery)
-        );
+        const matchingItems = MENU_ITEMS.filter(item => {
+            const name = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(item).toLowerCase() : item.name.toLowerCase();
+            const originalName = item.name.toLowerCase();
+            const desc = (item.description || '').toLowerCase();
+            return name.includes(searchQuery) || originalName.includes(searchQuery) || desc.includes(searchQuery);
+        });
 
         if (matchingItems.length === 0) {
             container.innerHTML = `
                 <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
                     <div style="margin-bottom: 14px; color: var(--gold-light);">${getIcon('search', 'icon-svg-xl')}</div>
-                    <h3 style="font-size: 1.3rem; color: var(--gold-light); margin-bottom: 8px;">Aucun produit trouvé</h3>
-                    <p>Aucun article ne correspond à "${searchQuery}". Essayez avec un autre mot ou parcourez nos catégories.</p>
+                    <h3 style="font-size: 1.3rem; color: var(--gold-light); margin-bottom: 8px;">${t('no_products')}</h3>
+                    <p>${t('no_products_desc')}</p>
                     <button class="category-back-btn" style="margin-top: 18px;" onclick="backToCategories()">
                         ${getIcon('arrow-left')}
-                        <span>Revenir aux Catégories</span>
+                        <span>${t('back_to_categories')}</span>
                     </button>
                 </div>
             `;
@@ -494,7 +615,7 @@ function renderMenu() {
         }
 
         container.innerHTML = '';
-        const searchSection = createCategorySection(`Résultats pour "${searchQuery}"`, "search", matchingItems);
+        const searchSection = createCategorySection(`${t('results_for')} "${searchQuery}"`, "search", matchingItems);
         container.appendChild(searchSection);
         return;
     }
@@ -516,10 +637,11 @@ function renderMenu() {
             const bannerIcon = document.getElementById('category-banner-icon');
             const bannerTitle = document.getElementById('category-banner-title');
             const bannerCount = document.getElementById('category-banner-count');
+            const groupName = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getCategoryName(group.id, group.name) : group.name;
             if (bannerIcon) bannerIcon.innerHTML = getIcon(group.icon, 'icon-svg-lg');
-            if (bannerTitle) bannerTitle.innerText = group.name;
+            if (bannerTitle) bannerTitle.innerText = groupName;
             const count = MENU_ITEMS.filter(i => i.groupId === activeMainGroup).length;
-            if (bannerCount) bannerCount.innerText = `${count} délices au menu`;
+            if (bannerCount) bannerCount.innerText = `${count} ${t('delights_count')}`;
         }
     }
     renderSubcategories();
@@ -536,10 +658,10 @@ function renderMenu() {
         container.innerHTML = `
             <div style="text-align: center; padding: 60px 20px; color: var(--text-muted);">
                 <div style="margin-bottom: 14px; color: var(--gold-light);">${getIcon('plate', 'icon-svg-xl')}</div>
-                <h3 style="font-size: 1.3rem; color: var(--gold-light); margin-bottom: 8px;">Aucun produit dans cette sous-catégorie</h3>
+                <h3 style="font-size: 1.3rem; color: var(--gold-light); margin-bottom: 8px;">${t('empty_subcat')}</h3>
                 <button class="category-back-btn" style="margin-top: 14px;" onclick="backToCategories()">
                     ${getIcon('arrow-left')}
-                    <span>Revenir aux Catégories</span>
+                    <span>${t('back_to_categories')}</span>
                 </button>
             </div>
         `;
@@ -552,18 +674,21 @@ function renderMenu() {
             subcats.forEach(sub => {
                 const itemsInSub = filteredItems.filter(i => i.categoryId === sub.id);
                 if (itemsInSub.length > 0) {
-                    const section = createCategorySection(sub.name, sub.icon, itemsInSub);
+                    const subTitle = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getCategoryName(sub.id, sub.name) : sub.name;
+                    const section = createCategorySection(subTitle, sub.icon, itemsInSub);
                     container.appendChild(section);
                 }
             });
         } else {
             const currentGroup = MAIN_GROUPS.find(g => g.id === activeMainGroup);
-            const section = createCategorySection(currentGroup ? currentGroup.name : "Menu", currentGroup ? currentGroup.icon : "sparkle", filteredItems);
+            const groupTitle = currentGroup ? ((typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getCategoryName(currentGroup.id, currentGroup.name) : currentGroup.name) : "Menu";
+            const section = createCategorySection(groupTitle, currentGroup ? currentGroup.icon : "sparkle", filteredItems);
             container.appendChild(section);
         }
     } else {
         const cat = MENU_CATEGORIES.find(c => c.id === activeSubcat);
-        const section = createCategorySection(cat ? cat.name : "Sélection", cat ? cat.icon : "sparkle", filteredItems);
+        const catTitle = cat ? ((typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getCategoryName(cat.id, cat.name) : cat.name) : "Sélection";
+        const section = createCategorySection(catTitle, cat ? cat.icon : "sparkle", filteredItems);
         container.appendChild(section);
     }
 }
@@ -571,12 +696,13 @@ function renderMenu() {
 function createCategorySection(title, iconKey, items) {
     const section = document.createElement('div');
     section.className = 'category-section';
+    const itemsCountSuffix = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.t('items_count') : 'articles';
 
     section.innerHTML = `
         <div class="section-header">
             <span style="display: inline-flex; align-items: center; color: var(--gold-light);">${getIcon(iconKey, 'icon-svg-lg')}</span>
             <h2 class="section-title">${title}</h2>
-            <span class="section-count">${items.length} articles</span>
+            <span class="section-count">${items.length} ${itemsCountSuffix}</span>
         </div>
         <div class="menu-grid ${viewLayout === 'list' ? 'layout-list' : ''}"></div>
     `;
@@ -602,22 +728,27 @@ function createProductCard(item) {
         ? `<div class="card-badge">${item.badge}</div>` 
         : '';
 
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const itemName = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(item) : item.name;
+    const itemDesc = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemDesc(item) : item.description;
+    const currency = t('currency');
+
     const addBtnContent = qtyInCart > 0 
-        ? `${getIcon('check')} <span>Ajouté (${qtyInCart})</span>`
-        : `${getIcon('plus')} <span>Ajouter</span>`;
+        ? `${getIcon('check')} <span>${t('added')} (${qtyInCart})</span>`
+        : `${getIcon('plus')} <span>${t('add_to_cart')}</span>`;
 
     card.innerHTML = `
         <div class="card-image-wrap">
-            <img class="card-img" src="${item.image}" alt="${item.name}" loading="lazy" 
+            <img class="card-img" src="${item.image}" alt="${itemName}" loading="lazy" 
                  onerror="this.src='https://images.unsplash.com/photo-1509785307050-d4066910ec1e?auto=format&fit=crop&w=600&q=80'">
             ${badgeHtml}
         </div>
         <div class="card-content">
             <div class="card-top">
-                <h3 class="card-title">${item.name}</h3>
-                <div class="card-price">${item.price} DT</div>
+                <h3 class="card-title">${itemName}</h3>
+                <div class="card-price">${item.price} ${currency}</div>
             </div>
-            <p class="card-desc">${item.description}</p>
+            <p class="card-desc">${itemDesc}</p>
             <div class="card-actions">
                 <div class="card-stepper">
                     <button class="step-btn" onclick="changeCardQuantity('${item.id}', -1)" aria-label="Moins">
@@ -661,8 +792,11 @@ function addFromCard(itemId) {
     const qtySpan = document.getElementById(`qty-${itemId}`);
     if (qtySpan) qtySpan.innerText = 1;
 
+    const itemName = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(item) : item.name;
+    const addedMsg = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.t('toast_item_added') : 'ajouté au panier';
+
     SoundFX.itemAdded();
-    showToast(`${qty}x ${item.name} ajouté au panier`, "cart");
+    showToast(`${qty}x ${itemName} ${addedMsg}`, "cart");
 }
 
 // ==========================================================================
@@ -718,6 +852,7 @@ function updateCartUI() {
     const bar = document.getElementById('floating-cart-bar');
     const badge = document.getElementById('cart-badge');
     const totalEl = document.getElementById('cart-bar-total');
+    const currency = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.t('currency') : 'DT';
 
     const totalCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     const totalPrice = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -725,7 +860,7 @@ function updateCartUI() {
     if (totalCount > 0) {
         if (bar) bar.classList.remove('hidden');
         if (badge) badge.innerText = totalCount;
-        if (totalEl) totalEl.innerText = `${totalPrice.toFixed(1)} DT`;
+        if (totalEl) totalEl.innerText = `${totalPrice.toFixed(1)} ${currency}`;
     } else {
         if (bar) bar.classList.add('hidden');
     }
@@ -757,15 +892,18 @@ function renderCartDrawerItems() {
     const totalSpan = document.getElementById('drawer-total-price');
     if (!body) return;
 
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const currency = t('currency');
+
     if (cart.length === 0) {
         body.innerHTML = `
             <div class="cart-empty-message">
                 <div style="margin-bottom: 12px; color: var(--gold-light);">${getIcon('coffee', 'icon-svg-xl')}</div>
-                <p>Votre panier est vide pour le moment.</p>
-                <p style="font-size: 0.85rem; margin-top: 6px; color: var(--gold-light);">Sélectionnez vos boissons ou plats préférés pour commencer !</p>
+                <p>${t('cart_empty')}</p>
+                <p style="font-size: 0.85rem; margin-top: 6px; color: var(--gold-light);">${t('cart_empty_desc')}</p>
             </div>
         `;
-        if (totalSpan) totalSpan.innerText = '0.0 DT';
+        if (totalSpan) totalSpan.innerText = `0.0 ${currency}`;
         return;
     }
 
@@ -776,14 +914,16 @@ function renderCartDrawerItems() {
         const itemTotal = item.price * item.quantity;
         total += itemTotal;
 
+        const itemName = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(item) : item.name;
+
         const row = document.createElement('div');
         row.className = 'cart-item-row';
         row.innerHTML = `
-            <img class="cart-item-thumb" src="${item.image}" alt="${item.name}" 
+            <img class="cart-item-thumb" src="${item.image}" alt="${itemName}" 
                  onerror="this.src='https://images.unsplash.com/photo-1509785307050-d4066910ec1e?auto=format&fit=crop&w=600&q=80'">
             <div class="cart-item-info">
-                <div class="cart-item-title">${item.name}</div>
-                <div class="cart-item-price">${itemTotal.toFixed(1)} DT <span style="font-size: 0.75rem; color: var(--text-muted);">(${item.price} DT/u)</span></div>
+                <div class="cart-item-title">${itemName}</div>
+                <div class="cart-item-price">${itemTotal.toFixed(1)} ${currency} <span style="font-size: 0.75rem; color: var(--text-muted);">(${item.price} ${currency}/u)</span></div>
             </div>
             <div class="card-stepper" style="background: rgba(0,0,0,0.45);">
                 <button class="step-btn" onclick="updateCartQuantity('${item.id}', -1)" aria-label="Moins">
@@ -801,15 +941,17 @@ function renderCartDrawerItems() {
         body.appendChild(row);
     });
 
-    if (totalSpan) totalSpan.innerText = `${total.toFixed(1)} DT`;
+    if (totalSpan) totalSpan.innerText = `${total.toFixed(1)} ${currency}`;
 }
 
 // ==========================================================================
 // SUBMIT ORDER TO KITCHEN
 // ==========================================================================
 function submitOrder() {
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+
     if (cart.length === 0) {
-        alert("Votre panier est vide !");
+        alert(t('alert_empty_cart'));
         return;
     }
 
@@ -870,9 +1012,10 @@ function showCustomerOrderModal(order) {
     const overlay = document.getElementById('status-modal-overlay');
     const modalOrderNum = document.getElementById('modal-order-id');
     const modalTable = document.getElementById('modal-table-num');
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
 
     if (modalOrderNum) modalOrderNum.innerText = `#${order.id}`;
-    if (modalTable) modalTable.innerText = `Table ${order.table}`;
+    if (modalTable) modalTable.innerText = `${t('table_selected_prefix')} ${order.table}`;
 
     updateCustomerOrderModalSteps(order.status);
     if (overlay) overlay.classList.add('open');
@@ -883,6 +1026,7 @@ function updateCustomerOrderModalSteps(status) {
     const step2 = document.getElementById('step-prep');
     const step3 = document.getElementById('step-ready');
     const statusDesc = document.getElementById('modal-status-description');
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
 
     [step1, step2, step3].forEach(s => {
         if (s) s.classList.remove('active', 'completed');
@@ -890,16 +1034,16 @@ function updateCustomerOrderModalSteps(status) {
 
     if (status === 'pending') {
         if (step1) step1.classList.add('active');
-        if (statusDesc) statusDesc.innerText = "Votre commande est bien reçue par le comptoir et attend la préparation.";
+        if (statusDesc) statusDesc.innerText = t('status_desc_pending');
     } else if (status === 'preparing') {
         if (step1) step1.classList.add('completed');
         if (step2) step2.classList.add('active');
-        if (statusDesc) statusDesc.innerText = "Notre barista & cuisine préparent actuellement vos délices fraîchement !";
+        if (statusDesc) statusDesc.innerText = t('status_desc_prep');
     } else if (status === 'completed') {
         if (step1) step1.classList.add('completed');
         if (step2) step2.classList.add('completed');
         if (step3) step3.classList.add('active', 'completed');
-        if (statusDesc) statusDesc.innerText = "Votre commande est prête et servie à votre table ! Bon appétit !";
+        if (statusDesc) statusDesc.innerText = t('status_desc_ready');
     }
 }
 

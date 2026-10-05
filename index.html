@@ -7,7 +7,7 @@
     <meta name="description" content="Menu digital d'exception et commande à table pour Kopi Koffee. Cafés de spécialité, formules petit déjeuner, crêpes et boissons fraîches.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="logo-gold.png">
 </head>
@@ -26,6 +26,12 @@
                 <div class="store-status-pill">
                     <span class="store-status-dot"></span>
                     <span id="header-status-text">Ouvert • Service à table</span>
+                </div>
+
+                <!-- Language Switcher (FR / عربي) -->
+                <div class="lang-switcher" aria-label="Choisir la langue / اختيار اللغة">
+                    <button type="button" class="lang-btn active" data-lang="fr" onclick="KOPI_I18N.setLang('fr')">FR</button>
+                    <button type="button" class="lang-btn" data-lang="ar" onclick="KOPI_I18N.setLang('ar')">عربي</button>
                 </div>
             </div>
 
@@ -304,6 +310,7 @@
 
     <!-- Scripts -->
     <script src="icons.js"></script>
+    <script src="i18n.js"></script>
     <script src="menu-data.js"></script>
     <script src="app.js"></script>
 </body>

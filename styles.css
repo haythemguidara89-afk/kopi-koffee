@@ -3,7 +3,7 @@
    Refined Dark Midnight Navy Blue (almost black) with Imperial Amber Gold accents
    ========================================================================== */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap');
 
 :root {
     /* Palette: Dark Navy Blue Almost Black */
@@ -2751,4 +2751,130 @@ body::before {
         width: calc(100% - 24px);
     }
 }
+
+/* ==========================================================================
+   LANGUAGE SWITCHER & RTL ARABIC SUPPORT
+   ========================================================================== */
+.lang-switcher {
+    display: inline-flex;
+    align-items: center;
+    background: rgba(0, 0, 0, 0.5);
+    border: 1.5px solid var(--gold-border);
+    border-radius: var(--radius-full);
+    padding: 3px;
+    gap: 3px;
+    backdrop-filter: blur(8px);
+}
+
+.lang-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.8rem;
+    font-weight: 700;
+    padding: 4px 11px;
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: var(--transition);
+    line-height: 1.2;
+}
+
+.lang-btn:hover {
+    color: var(--gold-light);
+}
+
+.lang-btn.active {
+    background: var(--gold-gradient);
+    color: #070a10;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(229, 166, 56, 0.4);
+}
+
+/* RTL Typography & Direction */
+[dir="rtl"],
+body.rtl-mode {
+    direction: rtl;
+    text-align: right;
+    font-family: 'Cairo', 'Plus Jakarta Sans', system-ui, sans-serif;
+}
+
+[dir="rtl"] h1, [dir="rtl"] h2, [dir="rtl"] h3, [dir="rtl"] h4,
+body.rtl-mode h1, body.rtl-mode h2, body.rtl-mode h3, body.rtl-mode h4 {
+    font-family: 'Cairo', var(--font-heading);
+    letter-spacing: 0;
+}
+
+[dir="rtl"] .search-icon-left {
+    left: auto;
+    right: 14px;
+}
+
+[dir="rtl"] .search-input {
+    padding-left: 36px;
+    padding-right: 44px;
+}
+
+[dir="rtl"] .search-clear-btn {
+    right: auto;
+    left: 10px;
+}
+
+[dir="rtl"] .admin-search-icon {
+    left: auto;
+    right: 14px;
+}
+
+[dir="rtl"] .admin-search-input {
+    padding-left: 36px;
+    padding-right: 40px;
+}
+
+[dir="rtl"] .admin-search-clear {
+    right: auto;
+    left: 10px;
+}
+
+[dir="rtl"] .cart-drawer {
+    right: auto;
+    left: 0;
+    transform: translateX(-100%);
+}
+
+[dir="rtl"] .cart-drawer.open {
+    transform: translateX(0);
+}
+
+[dir="rtl"] .category-back-btn svg {
+    transform: scaleX(-1);
+    margin-right: 0;
+    margin-left: 6px;
+}
+
+[dir="rtl"] .order-note-box {
+    border-left: none;
+    border-right: 3px solid var(--gold-primary);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+[dir="rtl"] .order-item-qty {
+    margin-right: 0;
+    margin-left: 8px;
+}
+
+[dir="rtl"] .table-input-prefix {
+    border-right: none;
+    border-left: 1.5px solid var(--gold-border);
+}
+
+[dir="rtl"] .header-top-row {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .cart-view-btn svg,
+[dir="rtl"] .drawer-checkout-btn svg,
+[dir="rtl"] .category-card-cta svg {
+    transform: scaleX(-1);
+}
+
 

@@ -7,7 +7,7 @@
     <meta name="description" content="Système d'affichage cuisine et gestion des commandes en temps réel pour Kopi Koffee.">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600&family=Urbanist:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
     <link rel="icon" type="image/png" href="logo-gold.png">
 </head>
@@ -22,8 +22,16 @@
              1. AUTHENTICATION SCREEN (PIN Code: 10699)
              ================================================================ -->
         <section id="admin-auth-view" class="admin-login-screen">
-            <div class="pin-modal" style="margin: 0 auto; max-width: 420px; padding: 40px 28px;">
-                <img src="logo-gold.png" alt="Kopi Koffee" style="height: 68px; margin: 0 auto 16px auto; display: block; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));">
+            <div class="pin-modal" style="margin: 0 auto; max-width: 420px; padding: 36px 28px;">
+                <!-- Language Switcher in Auth Screen -->
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 12px;">
+                    <div class="lang-switcher" aria-label="Choisir la langue / اختيار اللغة">
+                        <button type="button" class="lang-btn active" data-lang="fr" onclick="KOPI_I18N.setLang('fr')">FR</button>
+                        <button type="button" class="lang-btn" data-lang="ar" onclick="KOPI_I18N.setLang('ar')">عربي</button>
+                    </div>
+                </div>
+
+                <img src="logo-gold.png" alt="Kopi Koffee" style="height: 64px; margin: 0 auto 14px auto; display: block; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));">
                 
                 <div class="pin-lock-icon">
                     <svg class="icon-svg icon-svg-xl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -32,8 +40,8 @@
                     </svg>
                 </div>
                 
-                <h1 class="pin-title" style="font-size: 1.55rem; margin-bottom: 4px;">Espace Administration</h1>
-                <p class="pin-desc" style="margin-bottom: 22px;">Système Cuisine & Comptoir KDS • Kopi Koffee</p>
+                <h1 id="admin-auth-title" class="pin-title" style="font-size: 1.55rem; margin-bottom: 4px;">Espace Administration</h1>
+                <p id="admin-auth-desc" class="pin-desc" style="margin-bottom: 20px;">Système Cuisine & Comptoir KDS • Kopi Koffee</p>
 
                 <!-- PIN Dots Display -->
                 <div class="pin-dots-container" style="margin-bottom: 18px;">
@@ -115,6 +123,12 @@
                 </div>
 
                 <div class="admin-nav-right">
+                    <!-- Language Switcher (FR / عربي) -->
+                    <div class="lang-switcher" aria-label="Choisir la langue / اختيار اللغة">
+                        <button type="button" class="lang-btn active" data-lang="fr" onclick="KOPI_I18N.setLang('fr')">FR</button>
+                        <button type="button" class="lang-btn" data-lang="ar" onclick="KOPI_I18N.setLang('ar')">عربي</button>
+                    </div>
+
                     <div id="live-clock" class="admin-clock-badge">--:--:--</div>
                     
                     <button id="fullscreen-toggle" class="admin-nav-btn" onclick="toggleFullscreen()" title="Basculer en plein écran">
@@ -278,6 +292,7 @@
 
     <!-- Scripts -->
     <script src="icons.js"></script>
+    <script src="i18n.js"></script>
     <script src="menu-data.js"></script>
     <script src="admin.js"></script>
 </body>
