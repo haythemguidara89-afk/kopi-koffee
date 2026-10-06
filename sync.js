@@ -1,6 +1,6 @@
 // Kopi Koffee - Real-Time Cloud & Cross-Device Synchronization Engine (sync.js)
 // Enables instant order transmission from customer phones to the kitchen display system (KDS)
-// Layered: ntfy.sh SSE + poll=1 (Cloud) • BroadcastChannel (Local Tabs) • localStorage (Offline Cache)
+// Layered: Supabase PostgreSQL (Primary DB & Realtime) • ntfy.sh (Fallback Relay) • BroadcastChannel (Tabs) • localStorage (Offline)
 
 const KOPI_SYNC_ENDPOINT = "https://ntfy.sh/kopi_koffee_live_sync_2026";
 
@@ -14,6 +14,7 @@ const STATUS_RANK = {
 const KopiSync = {
     channel: (typeof window !== 'undefined' && window.BroadcastChannel) ? new BroadcastChannel('kopi_live_sync') : null,
     eventSource: null,
+    supabaseChannel: null,
     listeners: [],
 
     getOrders() {
@@ -68,7 +69,7 @@ const KopiSync = {
         window.dispatchEvent(new CustomEvent('kopiOrdersChanged', { detail: eventData }));
     },
 
-    // Submit a new customer order to cloud + local
+    // Submit a new customer order to Supabase + Cloud Relay + Local Cache
     async sendNewOrder(order) {
         const now = Date.now();
         order.status = order.status || 'pending';
@@ -93,7 +94,25 @@ const KopiSync = {
         }
         this.notifyListeners(payload);
 
-        // 2. Publish to cloud for cross-device reception
+        // 2. Primary: Save directly to Supabase PostgreSQL Database if configured
+        if (typeof kopiSupabase !== 'undefined' && kopiSupabase) {
+            try {
+                await kopiSupabase.from('orders').insert({
+                    id: order.id,
+                    table_number: String(order.table || '1'),
+                    status: 'pending',
+                    items: order.items || [],
+                    total: Number(order.total || 0),
+                    notes: order.notes || '',
+                    created_at: order.createdAt || new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                });
+            } catch (err) {
+                console.warn("Could not insert order into Supabase:", err);
+            }
+        }
+
+        // 3. Fallback: Publish to cloud pub/sub for cross-device reception
         try {
             await fetch(KOPI_SYNC_ENDPOINT, {
                 method: "POST",
@@ -101,7 +120,7 @@ const KopiSync = {
                 body: JSON.stringify(payload)
             });
         } catch (err) {
-            console.warn("Could not publish order to cloud, saved locally", err);
+            console.warn("Could not publish order to fallback relay", err);
         }
 
         return order;
@@ -136,6 +155,19 @@ const KopiSync = {
         }
         this.notifyListeners(payload);
 
+        // 1. Update in Supabase PostgreSQL
+        if (typeof kopiSupabase !== 'undefined' && kopiSupabase) {
+            try {
+                await kopiSupabase.from('orders').update({
+                    status: newStatus,
+                    updated_at: new Date().toISOString()
+                }).eq('id', orderId);
+            } catch (err) {
+                console.warn("Could not update status in Supabase:", err);
+            }
+        }
+
+        // 2. Fallback relay
         try {
             await fetch(KOPI_SYNC_ENDPOINT, {
                 method: "POST",
@@ -143,7 +175,7 @@ const KopiSync = {
                 body: JSON.stringify(payload)
             });
         } catch (err) {
-            console.warn("Could not publish status to cloud", err);
+            console.warn("Could not publish status to fallback relay", err);
         }
     },
 
@@ -178,6 +210,17 @@ const KopiSync = {
         }
         this.notifyListeners(payload);
 
+        // 1. Update archive status in Supabase
+        if (typeof kopiSupabase !== 'undefined' && kopiSupabase) {
+            try {
+                await kopiSupabase.from('orders').update({
+                    archived_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString()
+                }).eq('id', orderId);
+            } catch (err) {}
+        }
+
+        // 2. Fallback relay
         try {
             await fetch(KOPI_SYNC_ENDPOINT, {
                 method: "POST",
@@ -219,6 +262,17 @@ const KopiSync = {
         }
         this.notifyListeners(payload);
 
+        // 1. Reset archive status in Supabase
+        if (typeof kopiSupabase !== 'undefined' && kopiSupabase) {
+            try {
+                await kopiSupabase.from('orders').update({
+                    archived_at: null,
+                    updated_at: new Date().toISOString()
+                }).eq('id', orderId);
+            } catch (err) {}
+        }
+
+        // 2. Fallback relay
         try {
             await fetch(KOPI_SYNC_ENDPOINT, {
                 method: "POST",
@@ -233,10 +287,64 @@ const KopiSync = {
         return this.archiveOrder(orderId);
     },
 
-    // Pull historical/recent orders from cloud with chronological sorting & monotonicity checks
+    // Pull historical/recent orders: Supabase first, fallback to ntfy
     async fetchRemoteOrders() {
+        // 1. Try Supabase PostgreSQL first
+        if (typeof kopiSupabase !== 'undefined' && kopiSupabase) {
+            try {
+                const { data: activeRows, error: errActive } = await kopiSupabase
+                    .from('orders')
+                    .select('*')
+                    .is('archived_at', null)
+                    .order('created_at', { ascending: false });
+
+                const { data: archRows, error: errArch } = await kopiSupabase
+                    .from('orders')
+                    .select('*')
+                    .not('archived_at', 'is', null)
+                    .order('archived_at', { ascending: false });
+
+                if (!errActive && activeRows) {
+                    const mappedActive = activeRows.map(r => ({
+                        id: r.id,
+                        table: r.table_number,
+                        status: r.status,
+                        items: r.items || [],
+                        total: Number(r.total || 0),
+                        notes: r.notes || '',
+                        createdAt: r.created_at,
+                        updatedAt: new Date(r.updated_at || r.created_at).getTime(),
+                        timeStr: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    }));
+                    this.saveLocalOrders(mappedActive);
+                }
+
+                if (!errArch && archRows) {
+                    const mappedArch = archRows.map(r => ({
+                        id: r.id,
+                        table: r.table_number,
+                        status: r.status,
+                        items: r.items || [],
+                        total: Number(r.total || 0),
+                        notes: r.notes || '',
+                        createdAt: r.created_at,
+                        updatedAt: new Date(r.updated_at || r.created_at).getTime(),
+                        archivedAt: r.archived_at,
+                        timeStr: new Date(r.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    }));
+                    this.saveLocalArchivedOrders(mappedArch);
+                }
+
+                this.notifyListeners({ event: "remote_sync" });
+                return;
+            } catch (e) {
+                console.warn("Supabase query failed, using fallback:", e);
+            }
+        }
+
+        // 2. Fallback: ntfy.sh polling
         try {
-            const res = await fetch(`${KOPI_SYNC_ENDPOINT}/json?poll=1`, { cache: 'no-store' });
+            const res = await fetch(KOPI_SYNC_ENDPOINT + "/json?poll=1&since=all", { cache: 'no-store' });
             if (!res.ok) return;
             const text = await res.text();
             if (!text) return;
@@ -330,11 +438,74 @@ const KopiSync = {
                 this.notifyListeners({ event: "remote_sync", orders });
             }
         } catch (e) {
-            console.warn("Could not fetch remote orders", e);
+            console.warn("Could not fetch remote orders from fallback relay", e);
         }
     },
 
-    // Connect to live SSE and BroadcastChannel
+    // Handle incoming change pushed from Supabase Realtime WebSocket
+    handleSupabaseRealtime(payload) {
+        if (!payload) return;
+        const { eventType, new: newRow, old: oldRow } = payload;
+
+        if (eventType === 'INSERT' && newRow) {
+            const order = {
+                id: newRow.id,
+                table: newRow.table_number,
+                status: newRow.status,
+                items: newRow.items || [],
+                total: Number(newRow.total || 0),
+                notes: newRow.notes || '',
+                createdAt: newRow.created_at,
+                updatedAt: new Date(newRow.updated_at || newRow.created_at).getTime(),
+                timeStr: new Date(newRow.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            this.applyIncomingPayload({ event: "new_order", order });
+        } else if (eventType === 'UPDATE' && newRow) {
+            if (newRow.archived_at) {
+                this.applyIncomingPayload({
+                    event: "archive_order",
+                    orderId: newRow.id,
+                    order: {
+                        id: newRow.id,
+                        table: newRow.table_number,
+                        status: newRow.status,
+                        items: newRow.items || [],
+                        total: Number(newRow.total || 0),
+                        notes: newRow.notes || '',
+                        createdAt: newRow.created_at,
+                        updatedAt: new Date(newRow.updated_at || newRow.created_at).getTime(),
+                        archivedAt: newRow.archived_at
+                    }
+                });
+            } else if (oldRow && oldRow.archived_at && !newRow.archived_at) {
+                this.applyIncomingPayload({
+                    event: "restore_order",
+                    orderId: newRow.id,
+                    order: {
+                        id: newRow.id,
+                        table: newRow.table_number,
+                        status: newRow.status,
+                        items: newRow.items || [],
+                        total: Number(newRow.total || 0),
+                        notes: newRow.notes || '',
+                        createdAt: newRow.created_at,
+                        updatedAt: new Date(newRow.updated_at || newRow.created_at).getTime()
+                    }
+                });
+            } else {
+                this.applyIncomingPayload({
+                    event: "update_status",
+                    orderId: newRow.id,
+                    status: newRow.status,
+                    sentAt: new Date(newRow.updated_at || newRow.created_at).getTime()
+                });
+            }
+        } else if (eventType === 'DELETE' && oldRow) {
+            this.applyIncomingPayload({ event: "delete_order", orderId: oldRow.id });
+        }
+    },
+
+    // Connect to Supabase Realtime, BroadcastChannel, and fallback SSE
     initRealtime() {
         // 1. Listen on BroadcastChannel for same-device cross-tab
         if (this.channel) {
@@ -345,15 +516,36 @@ const KopiSync = {
             };
         }
 
-        // 2. Initial cloud fetch
+        // 2. Initial data fetch
         this.fetchRemoteOrders();
 
-        // 3. Connect SSE for real-time push from other devices
+        // 3. Connect Supabase Realtime if client is available
+        if (typeof kopiSupabase !== 'undefined' && kopiSupabase) {
+            try {
+                if (this.supabaseChannel) {
+                    kopiSupabase.removeChannel(this.supabaseChannel);
+                }
+                this.supabaseChannel = kopiSupabase
+                    .channel('kopi_orders_realtime_stream')
+                    .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+                        this.handleSupabaseRealtime(payload);
+                    })
+                    .subscribe((status) => {
+                        if (status === 'SUBSCRIBED') {
+                            console.log('Kopi Koffee: Supabase Realtime stream active!');
+                        }
+                    });
+            } catch (err) {
+                console.warn('Could not connect Supabase Realtime channel', err);
+            }
+        }
+
+        // 4. Fallback SSE connection for cross-device push
         try {
             if (this.eventSource) {
                 this.eventSource.close();
             }
-            this.eventSource = new EventSource(`${KOPI_SYNC_ENDPOINT}/sse`);
+            this.eventSource = new EventSource(KOPI_SYNC_ENDPOINT + "/sse");
             this.eventSource.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
@@ -370,10 +562,25 @@ const KopiSync = {
             console.warn("EventSource not supported or failed", e);
         }
 
-        // 4. Fallback interval polling every 3 seconds to guarantee 100% sync
+        // 5. Fallback polling backup every 3.5 seconds
         setInterval(() => {
             this.fetchRemoteOrders();
-        }, 3000);
+        }, 3500);
+
+        // Listen for Supabase ready event if initialized asynchronously
+        window.addEventListener('kopiSupabaseReady', () => {
+            this.fetchRemoteOrders();
+            if (kopiSupabase && !this.supabaseChannel) {
+                try {
+                    this.supabaseChannel = kopiSupabase
+                        .channel('kopi_orders_realtime_stream')
+                        .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, (payload) => {
+                            this.handleSupabaseRealtime(payload);
+                        })
+                        .subscribe();
+                } catch (e) {}
+            }
+        });
     },
 
     applyIncomingPayload(payload) {
