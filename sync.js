@@ -4,6 +4,13 @@
 
 const KOPI_SYNC_ENDPOINT = "https://ntfy.sh/kopi_koffee_live_sync_2026";
 
+// Monotonic order status ranks: pending (1) -> preparing (2) -> completed (3)
+const STATUS_RANK = {
+    'pending': 1,
+    'preparing': 2,
+    'completed': 3
+};
+
 const KopiSync = {
     channel: (typeof window !== 'undefined' && window.BroadcastChannel) ? new BroadcastChannel('kopi_live_sync') : null,
     eventSource: null,
@@ -11,7 +18,14 @@ const KopiSync = {
 
     getOrders() {
         try {
-            return JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+            const parsed = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+            return parsed.map(o => {
+                if (!o.updatedAt) {
+                    o.updatedAt = o.createdAt ? new Date(o.createdAt).getTime() : Date.now();
+                }
+                if (!o.status) o.status = 'pending';
+                return o;
+            });
         } catch (e) {
             return [];
         }
@@ -56,6 +70,10 @@ const KopiSync = {
 
     // Submit a new customer order to cloud + local
     async sendNewOrder(order) {
+        const now = Date.now();
+        order.status = order.status || 'pending';
+        order.updatedAt = now;
+
         let orders = this.getOrders();
         // Add if not already present
         if (!orders.some(o => o.id === order.id)) {
@@ -66,7 +84,7 @@ const KopiSync = {
         const payload = {
             event: "new_order",
             order: order,
-            sentAt: Date.now()
+            sentAt: now
         };
 
         // 1. Broadcast locally across tabs
@@ -91,18 +109,26 @@ const KopiSync = {
 
     // Update order status (pending -> preparing -> completed)
     async updateOrderStatus(orderId, newStatus) {
+        const now = Date.now();
         let orders = this.getOrders();
         const order = orders.find(o => o.id === orderId);
         if (order) {
-            order.status = newStatus;
-            this.saveLocalOrders(orders);
+            const currentRank = STATUS_RANK[order.status] || 0;
+            const newRank = STATUS_RANK[newStatus] || 0;
+
+            // Status monotonicity: Never allow backward status regression
+            if (newRank >= currentRank) {
+                order.status = newStatus;
+                order.updatedAt = now;
+                this.saveLocalOrders(orders);
+            }
         }
 
         const payload = {
             event: "update_status",
             orderId: orderId,
             status: newStatus,
-            sentAt: Date.now()
+            sentAt: now
         };
 
         if (this.channel) {
@@ -123,11 +149,13 @@ const KopiSync = {
 
     // Archive an order safely with timestamps
     async archiveOrder(orderId) {
+        const now = Date.now();
         let orders = this.getOrders();
         const order = orders.find(o => o.id === orderId);
         if (!order) return;
 
         order.archivedAt = new Date().toISOString();
+        order.updatedAt = now;
 
         orders = orders.filter(o => o.id !== orderId);
         this.saveLocalOrders(orders);
@@ -142,7 +170,7 @@ const KopiSync = {
             event: "archive_order",
             orderId: orderId,
             order: order,
-            sentAt: Date.now()
+            sentAt: now
         };
 
         if (this.channel) {
@@ -161,6 +189,7 @@ const KopiSync = {
 
     // Restore an archived order back to active kitchen display
     async restoreOrder(orderId) {
+        const now = Date.now();
         let archived = this.getArchivedOrders();
         const order = archived.find(a => a.id === orderId);
         if (!order) return;
@@ -170,6 +199,7 @@ const KopiSync = {
 
         let restoredOrder = { ...order };
         delete restoredOrder.archivedAt;
+        restoredOrder.updatedAt = now;
 
         let orders = this.getOrders();
         if (!orders.some(o => o.id === orderId)) {
@@ -181,7 +211,7 @@ const KopiSync = {
             event: "restore_order",
             orderId: orderId,
             order: restoredOrder,
-            sentAt: Date.now()
+            sentAt: now
         };
 
         if (this.channel) {
@@ -203,7 +233,7 @@ const KopiSync = {
         return this.archiveOrder(orderId);
     },
 
-    // Pull historical/recent orders from cloud
+    // Pull historical/recent orders from cloud with chronological sorting & monotonicity checks
     async fetchRemoteOrders() {
         try {
             const res = await fetch(`${KOPI_SYNC_ENDPOINT}/json?poll=1`, { cache: 'no-store' });
@@ -212,8 +242,7 @@ const KopiSync = {
             if (!text) return;
 
             const lines = text.trim().split("\n");
-            let orders = this.getOrders();
-            let changed = false;
+            const payloads = [];
 
             for (const line of lines) {
                 if (!line.trim()) continue;
@@ -221,45 +250,79 @@ const KopiSync = {
                     const data = JSON.parse(line);
                     if (data.event === "message" && data.message) {
                         const payload = JSON.parse(data.message);
-                        if (payload.event === "new_order" && payload.order) {
-                            const existing = orders.find(o => o.id === payload.order.id);
-                            if (!existing) {
-                                orders.unshift(payload.order);
-                                changed = true;
-                            }
-                        } else if (payload.event === "update_status" && payload.orderId) {
-                            const existing = orders.find(o => o.id === payload.orderId);
-                            if (existing && existing.status !== payload.status) {
-                                existing.status = payload.status;
-                                changed = true;
-                            }
-                        } else if (payload.event === "delete_order" && payload.orderId) {
-                            const prevLen = orders.length;
-                            orders = orders.filter(o => o.id !== payload.orderId);
-                            if (orders.length !== prevLen) changed = true;
-                        } else if (payload.event === "archive_order" && payload.orderId) {
-                            const prevLen = orders.length;
-                            orders = orders.filter(o => o.id !== payload.orderId);
-                            if (orders.length !== prevLen) changed = true;
-
-                            let archived = this.getArchivedOrders();
-                            if (payload.order && !archived.some(a => a.id === payload.orderId)) {
-                                archived.unshift(payload.order);
-                                this.saveLocalArchivedOrders(archived);
-                            }
-                        } else if (payload.event === "restore_order" && payload.orderId) {
-                            let archived = this.getArchivedOrders();
-                            const prevArchLen = archived.length;
-                            archived = archived.filter(a => a.id !== payload.orderId);
-                            if (archived.length !== prevArchLen) this.saveLocalArchivedOrders(archived);
-
-                            if (payload.order && !orders.some(o => o.id === payload.orderId)) {
-                                orders.unshift(payload.order);
-                                changed = true;
-                            }
+                        if (payload && payload.event) {
+                            payloads.push(payload);
                         }
                     }
                 } catch (e) {}
+            }
+
+            // Sort incoming payloads chronologically by sentAt
+            payloads.sort((a, b) => (a.sentAt || 0) - (b.sentAt || 0));
+
+            let orders = this.getOrders();
+            let archived = this.getArchivedOrders();
+            let changed = false;
+
+            for (const payload of payloads) {
+                if (payload.event === "new_order" && payload.order) {
+                    const orderId = payload.order.id;
+                    const inOrders = orders.some(o => o.id === orderId);
+                    const inArchived = archived.some(a => a.id === orderId);
+                    if (!inOrders && !inArchived) {
+                        const newO = { ...payload.order };
+                        newO.status = newO.status || 'pending';
+                        newO.updatedAt = payload.sentAt || (newO.createdAt ? new Date(newO.createdAt).getTime() : Date.now());
+                        orders.unshift(newO);
+                        changed = true;
+                    }
+                } else if (payload.event === "update_status" && payload.orderId) {
+                    const existing = orders.find(o => o.id === payload.orderId);
+                    if (existing) {
+                        const currentRank = STATUS_RANK[existing.status] || 0;
+                        const incomingRank = STATUS_RANK[payload.status] || 0;
+                        const incomingTime = payload.sentAt || 0;
+                        const existingTime = existing.updatedAt || 0;
+
+                        // Ignore stale messages older than local state
+                        if (incomingTime && existingTime && incomingTime < existingTime) {
+                            continue;
+                        }
+
+                        // Strictly reject backward status regression (e.g., completed -> preparing)
+                        if (incomingRank < currentRank) {
+                            continue;
+                        }
+
+                        if (existing.status !== payload.status) {
+                            existing.status = payload.status;
+                            existing.updatedAt = Math.max(existingTime, incomingTime || Date.now());
+                            changed = true;
+                        }
+                    }
+                } else if (payload.event === "delete_order" && payload.orderId) {
+                    const prevLen = orders.length;
+                    orders = orders.filter(o => o.id !== payload.orderId);
+                    if (orders.length !== prevLen) changed = true;
+                } else if (payload.event === "archive_order" && payload.orderId) {
+                    const prevLen = orders.length;
+                    orders = orders.filter(o => o.id !== payload.orderId);
+                    if (orders.length !== prevLen) changed = true;
+
+                    if (payload.order && !archived.some(a => a.id === payload.orderId)) {
+                        archived.unshift(payload.order);
+                        this.saveLocalArchivedOrders(archived);
+                    }
+                } else if (payload.event === "restore_order" && payload.orderId) {
+                    const prevArchLen = archived.length;
+                    archived = archived.filter(a => a.id !== payload.orderId);
+                    if (archived.length !== prevArchLen) this.saveLocalArchivedOrders(archived);
+
+                    if (payload.order && !orders.some(o => o.id === payload.orderId)) {
+                        orders.unshift(payload.order);
+                        changed = true;
+                    }
+                }
             }
 
             if (changed) {
@@ -314,19 +377,45 @@ const KopiSync = {
     },
 
     applyIncomingPayload(payload) {
+        if (!payload || !payload.event) return;
         let orders = this.getOrders();
+        let archived = this.getArchivedOrders();
         let changed = false;
 
         if (payload.event === "new_order" && payload.order) {
-            if (!orders.some(o => o.id === payload.order.id)) {
-                orders.unshift(payload.order);
+            const orderId = payload.order.id;
+            const inOrders = orders.some(o => o.id === orderId);
+            const inArchived = archived.some(a => a.id === orderId);
+            if (!inOrders && !inArchived) {
+                const newO = { ...payload.order };
+                newO.status = newO.status || 'pending';
+                newO.updatedAt = payload.sentAt || (newO.createdAt ? new Date(newO.createdAt).getTime() : Date.now());
+                orders.unshift(newO);
                 changed = true;
             }
         } else if (payload.event === "update_status" && payload.orderId) {
             const order = orders.find(o => o.id === payload.orderId);
-            if (order && order.status !== payload.status) {
-                order.status = payload.status;
-                changed = true;
+            if (order) {
+                const currentRank = STATUS_RANK[order.status] || 0;
+                const incomingRank = STATUS_RANK[payload.status] || 0;
+                const incomingTime = payload.sentAt || 0;
+                const existingTime = order.updatedAt || 0;
+
+                // Ignore stale messages
+                if (incomingTime && existingTime && incomingTime < existingTime) {
+                    return;
+                }
+
+                // Strictly reject backward status regression (completed -> preparing/pending)
+                if (incomingRank < currentRank) {
+                    return;
+                }
+
+                if (order.status !== payload.status) {
+                    order.status = payload.status;
+                    order.updatedAt = Math.max(existingTime, incomingTime || Date.now());
+                    changed = true;
+                }
             }
         } else if (payload.event === "delete_order" && payload.orderId) {
             const prevLen = orders.length;
@@ -337,13 +426,11 @@ const KopiSync = {
             orders = orders.filter(o => o.id !== payload.orderId);
             if (orders.length !== prevLen) changed = true;
 
-            let archived = this.getArchivedOrders();
             if (payload.order && !archived.some(a => a.id === payload.orderId)) {
                 archived.unshift(payload.order);
                 this.saveLocalArchivedOrders(archived);
             }
         } else if (payload.event === "restore_order" && payload.orderId) {
-            let archived = this.getArchivedOrders();
             const prevArchLen = archived.length;
             archived = archived.filter(a => a.id !== payload.orderId);
             if (archived.length !== prevArchLen) this.saveLocalArchivedOrders(archived);

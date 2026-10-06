@@ -776,6 +776,7 @@ function updateOrderStatus(orderId, newStatus) {
         const order = orders.find(o => o.id === orderId);
         if (order) {
             order.status = newStatus;
+            order.updatedAt = Date.now();
             localStorage.setItem('kopiOrders', JSON.stringify(orders));
         }
     }

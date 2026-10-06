@@ -69,6 +69,11 @@
     height: 2.2em;
 }
 
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -81,15 +86,17 @@ body {
     color: var(--text-primary);
     font-family: var(--font-body);
     min-height: 100vh;
+    min-height: 100dvh;
     line-height: 1.5;
     background-image: 
         radial-gradient(circle at 15% 15%, rgba(229, 166, 56, 0.08) 0%, transparent 45%),
         radial-gradient(circle at 85% 85%, rgba(20, 50, 100, 0.2) 0%, transparent 50%),
         radial-gradient(circle at 50% 30%, rgba(12, 18, 29, 0.5) 0%, transparent 70%),
         linear-gradient(180deg, #090e18 0%, #04070c 100%);
-    background-attachment: fixed;
+    background-attachment: scroll;
     overflow-x: hidden;
     letter-spacing: 0.2px;
+    -webkit-overflow-scrolling: touch;
 }
 
 body::before {
@@ -102,6 +109,7 @@ body::before {
     background-size: 64px 64px;
     opacity: 1;
     z-index: 0;
+    will-change: transform;
 }
 
 .app-wrapper {
@@ -109,7 +117,10 @@ body::before {
     z-index: 1;
     max-width: 1240px;
     margin: 0 auto;
-    padding: 0 16px 140px 16px;
+    padding: 0 16px max(140px, calc(100px + env(safe-area-inset-bottom))) 16px;
+    padding-top: max(0px, env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
 }
 
 .hidden {
@@ -267,7 +278,12 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
@@ -284,6 +300,10 @@ body::before {
     border-radius: var(--radius-lg);
     width: 100%;
     max-width: 380px;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: auto;
     padding: 30px 24px;
     text-align: center;
     box-shadow: var(--shadow-modal), var(--gold-glow);
@@ -1629,7 +1649,12 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
@@ -1646,6 +1671,10 @@ body::before {
     border-radius: var(--radius-lg);
     width: 100%;
     max-width: 440px;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: auto;
     padding: 28px 24px;
     text-align: center;
     box-shadow: var(--shadow-modal), var(--gold-glow);
@@ -1745,7 +1774,12 @@ body::before {
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 20px;
+    padding: 16px;
+    padding-top: max(16px, env(safe-area-inset-top));
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.3s ease;
@@ -1762,6 +1796,10 @@ body::before {
     border-radius: var(--radius-lg);
     width: 100%;
     max-width: 480px;
+    max-height: calc(100dvh - 32px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    margin: auto;
     padding: 28px;
     text-align: center;
     box-shadow: var(--shadow-modal), var(--gold-glow);
@@ -2923,7 +2961,7 @@ body.rtl-mode h1, body.rtl-mode h2, body.rtl-mode h3, body.rtl-mode h4 {
     border-radius: var(--radius-lg);
     width: 100%;
     max-width: 860px;
-    max-height: 90vh;
+    max-height: calc(100dvh - 32px);
     display: flex;
     flex-direction: column;
     padding: 24px 26px;
@@ -2931,6 +2969,7 @@ body.rtl-mode h1, body.rtl-mode h2, body.rtl-mode h3, body.rtl-mode h4 {
     animation: popIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     position: relative;
     overflow: hidden;
+    margin: auto;
 }
 
 .report-modal-header {
@@ -3116,9 +3155,10 @@ body.rtl-mode h1, body.rtl-mode h2, body.rtl-mode h3, body.rtl-mode h4 {
 
 .report-orders-scroll {
     overflow-y: auto;
-    flex: 1;
-    min-height: 180px;
-    max-height: 480px;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    flex: 1 1 auto;
+    min-height: 140px;
     padding-right: 6px;
     display: flex;
     flex-direction: column;
@@ -3263,6 +3303,274 @@ body.rtl-mode h1, body.rtl-mode h2, body.rtl-mode h3, body.rtl-mode h4 {
 [dir="rtl"] .report-order-card:hover {
     transform: translateX(-2px);
 }
+
+/* ==========================================================================
+   ADVANCED MOBILE & ELDER-FRIENDLY RESPONSIVE SYSTEM (< 768px & < 480px)
+   ========================================================================== */
+.main-groups-scroller,
+.subcategories-container {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+}
+
+@media (max-width: 768px) {
+    .app-wrapper {
+        padding: 0 12px max(140px, calc(100px + env(safe-area-inset-bottom))) 12px;
+    }
+
+    /* Admin Navigation Bar on Tablet/Mobile */
+    .admin-header-nav {
+        padding: 10px 14px;
+        margin: -16px -12px 18px -12px;
+        gap: 10px;
+    }
+
+    .admin-nav-title {
+        font-size: 1.15rem;
+    }
+
+    /* Admin Metrics Grid: 2 columns on tablet/mobile */
+    .admin-metrics {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .metric-card {
+        padding: 12px 14px;
+        gap: 12px;
+    }
+
+    .metric-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1.25rem;
+    }
+
+    .metric-value {
+        font-size: 1.3rem;
+    }
+
+    .metric-label {
+        font-size: 0.78rem;
+    }
+
+    /* Admin Controls (Search & Filter tabs) */
+    .admin-controls {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px 14px;
+        margin-bottom: 18px;
+    }
+
+    .admin-search-wrapper {
+        min-width: 100%;
+        max-width: 100%;
+    }
+
+    .admin-filter-group {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 4px;
+        flex-wrap: nowrap;
+        scrollbar-width: none;
+    }
+
+    .admin-filter-group::-webkit-scrollbar {
+        display: none;
+    }
+
+    .filter-btn {
+        flex-shrink: 0;
+        padding: 7px 13px;
+        font-size: 0.82rem;
+    }
+
+    /* Admin Order Cards Grid: 1 column on phone */
+    .admin-orders-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .order-card {
+        padding: 16px;
+    }
+
+    .order-card-header {
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+    }
+
+    .order-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        width: 100%;
+    }
+
+    .kds-btn {
+        min-height: 44px;
+        justify-content: center;
+        font-size: 0.88rem;
+    }
+
+    /* Report & Archives Modals */
+    .kopi-report-modal {
+        padding: 18px 14px;
+        max-height: calc(100dvh - 20px);
+        border-radius: var(--radius-md);
+    }
+
+    .report-modal-header {
+        padding-bottom: 12px;
+        margin-bottom: 12px;
+        gap: 10px;
+    }
+
+    .report-header-icon {
+        width: 38px;
+        height: 38px;
+    }
+
+    .report-title {
+        font-size: 1.15rem;
+    }
+
+    .report-subtitle {
+        font-size: 0.8rem;
+    }
+
+    .report-kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .report-kpi-card {
+        padding: 10px 12px;
+    }
+
+    .kpi-value {
+        font-size: 1.15rem;
+    }
+
+    .report-actions-bar {
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+    }
+
+    .btn-export-primary,
+    .btn-export-secondary {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 14px;
+        font-size: 0.84rem;
+    }
+
+    /* Stack Report Order Card for phone clarity */
+    .report-order-card {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+        padding: 12px 14px;
+    }
+
+    .report-order-right {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        border-top: 1px dashed rgba(255, 255, 255, 0.08);
+        padding-top: 10px;
+    }
+
+    [dir="rtl"] .report-order-right {
+        flex-direction: row-reverse;
+    }
+
+    /* Toast container centering on phone */
+    .toast-container {
+        top: 14px;
+        left: 14px;
+        right: 14px;
+        align-items: center;
+    }
+
+    .toast {
+        width: 100%;
+        max-width: 360px;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Safe micro-phone sizing (< 480px) */
+    .brand-logo-img {
+        height: 68px;
+    }
+
+    .store-status-pill {
+        font-size: 0.72rem;
+        padding: 3px 9px;
+    }
+
+    .elder-table-strip {
+        padding: 10px 12px;
+        gap: 8px;
+    }
+
+    .table-strip-icon {
+        width: 38px;
+        height: 38px;
+        font-size: 1.3rem;
+    }
+
+    .table-strip-value {
+        font-size: 0.95rem;
+    }
+
+    .table-strip-change-btn {
+        padding: 6px 10px;
+        font-size: 0.78rem;
+    }
+
+    .modal-quick-tables-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+    }
+
+    .quick-table-btn {
+        padding: 8px 6px;
+        font-size: 0.85rem;
+    }
+
+    .floating-cart-bar {
+        bottom: max(12px, env(safe-area-inset-bottom));
+        width: calc(100% - 20px);
+        padding: 8px 12px 8px 16px;
+    }
+
+    .cart-bar-total {
+        font-size: 1.1rem;
+    }
+
+    .cart-view-btn {
+        padding: 9px 14px;
+        font-size: 0.85rem;
+    }
+
+    .admin-clock-badge {
+        display: none;
+    }
+
+    .admin-nav-btn {
+        padding: 6px 9px;
+        font-size: 0.76rem;
+    }
+}
+
 
 
 
