@@ -5,10 +5,10 @@
 // OR by entering them in the Admin Settings on the Kitchen Display System (saved in localStorage).
 
 const KOPI_SUPABASE_CONFIG = {
-    // Replace with your Project URL, e.g. "https://xyzcompany.supabase.co"
-    url: "YOUR_SUPABASE_PROJECT_URL",
-    // Replace with your Project Anon Public Key, e.g. "eyJhbGciOiJIUzI1NiIsInR5..."
-    anonKey: "YOUR_SUPABASE_ANON_KEY"
+    // Project URL: https://pmaslgwawmbpeoahwxfv.supabase.co
+    url: "https://pmaslgwawmbpeoahwxfv.supabase.co",
+    // Project Anon Public Key
+    anonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBtYXNsZ3dhd21icGVvYWh3eGZ2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyODY4MTMsImV4cCI6MjEwNjg2MjgxM30.oqWVU5Qp3Th0Velnqhb4YkLF1KtiVyOas2Igk501Vow"
 };
 
 function getActiveSupabaseConfig() {
