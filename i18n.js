@@ -134,7 +134,38 @@ const KOPI_I18N = {
             receipt_date: "Date/Heure:",
             receipt_note: "NOTE:",
             receipt_total: "TOTAL:",
-            receipt_thanks: "Merci de votre fidélité !"
+            receipt_thanks: "Merci de votre fidélité !",
+
+            // Daily Summary & Extraction
+            admin_daily_title: "Rapport de Clôture Journalier",
+            admin_daily_subtitle: "Récapitulatif des commandes servies & chiffre d'affaires du jour",
+            admin_served_orders_title: "Commandes Servies Aujourd'hui",
+            admin_served_orders_desc: "Toutes les commandes ayant été préparées et servies aux tables.",
+            admin_metric_served_count: "Commandes Servies",
+            admin_metric_avg_basket: "Panier Moyen",
+            admin_btn_extract_csv: "Exporter CSV (Excel)",
+            admin_btn_print_zreport: "Imprimer Rapport Z",
+            admin_btn_copy_summary: "Copier le Résumé",
+            admin_no_served_orders: "Aucune commande servie aujourd'hui pour le moment.",
+            admin_articles_sold: "Articles Préparés & Vendus",
+            admin_order_time: "Heure",
+            admin_order_table: "Table",
+            admin_order_items: "Articles",
+            admin_order_amount: "Montant",
+            admin_click_to_extract: "Cliquer pour voir et extraire",
+
+            // Archives
+            admin_archives_title: "Historique des Commandes Archivées",
+            admin_archives_subtitle: "Retrouvez toutes les commandes passées avec dates, heures et détails",
+            admin_btn_archives: "Archives",
+            admin_btn_restore: "Restaurer",
+            admin_archived_at: "Archivée à",
+            admin_created_at: "Créée le",
+            admin_no_archives: "Aucune commande dans les archives pour le moment.",
+            admin_search_archives: "Rechercher dans les archives (table, ID, article)...",
+            admin_confirm_restore: "Voulez-vous restaurer cette commande vers l'écran de cuisine actif ?",
+            admin_toast_restored: "Commande restaurée en cuisine !",
+            admin_toast_summary_copied: "Résumé copié dans le presse-papiers !"
         },
 
         ar: {
@@ -320,7 +351,38 @@ const KOPI_I18N = {
             receipt_date: "التاريخ/الوقت:",
             receipt_note: "ملاحظة:",
             receipt_total: "المجموع:",
-            receipt_thanks: "شكراً لزيارتكم الكريمة !"
+            receipt_thanks: "شكراً لزيارتكم الكريمة !",
+
+            // Daily Summary & Extraction
+            admin_daily_title: "تقرير نهاية اليوم والطلبات المقدمة",
+            admin_daily_subtitle: "ملخص المبيعات، الطلبات المنجزة والمداخيل اليومية",
+            admin_served_orders_title: "الطلبات التي تم تقديمها اليوم",
+            admin_served_orders_desc: "جميع الطلبات التي تم تحضيرها وتقديمها على الطاولات.",
+            admin_metric_served_count: "طلبات تم تقديمها",
+            admin_metric_avg_basket: "معدل الطلب الواحد",
+            admin_btn_extract_csv: "تحميل ملف إكسل (CSV)",
+            admin_btn_print_zreport: "طباعة تقرير الإغلاق (Z)",
+            admin_btn_copy_summary: "نسخ الملخص",
+            admin_no_served_orders: "لم يتم تقديم أي طلب بعد اليوم.",
+            admin_articles_sold: "المنتجات المحضرة والمباعة",
+            admin_order_time: "الوقت",
+            admin_order_table: "الطاولة",
+            admin_order_items: "المحتويات",
+            admin_order_amount: "المبلغ",
+            admin_click_to_extract: "اضغط للمعاينة والاستخراج",
+
+            // Archives
+            admin_archives_title: "سجل الطلبات المؤرشفة",
+            admin_archives_subtitle: "عرض جميع الطلبات السابقة مع التاريخ والوقت والتفاصيل الكاملة",
+            admin_btn_archives: "الأرشيف",
+            admin_btn_restore: "استرجاع للمطبخ",
+            admin_archived_at: "أرشفت في",
+            admin_created_at: "أُنشئت في",
+            admin_no_archives: "لا توجد طلبات مؤرشفة حالياً.",
+            admin_search_archives: "بحث في الأرشيف (رقم الطاولة، رقم الطلب، المنتج)...",
+            admin_confirm_restore: "هل تريد استرجاع هذا الطلب إلى شاشة المطبخ النشطة ؟",
+            admin_toast_restored: "تمت استعادة الطلب إلى شاشة المطبخ !",
+            admin_toast_summary_copied: "تم نسخ ملخص اليوم بنجاح !"
         }
     },
 

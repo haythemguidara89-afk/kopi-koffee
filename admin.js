@@ -8,6 +8,7 @@ let searchQuery = '';
 let soundEnabled = localStorage.getItem('kopiSoundEnabled') !== 'false';
 let enteredPin = "";
 let lastKnownOrderCount = 0;
+let archivesSearchQuery = "";
 
 // ==========================================================================
 // AUDIO SYNTHESIS FOR KITCHEN ALERTS (Native Web Audio API)
@@ -216,6 +217,57 @@ function updateAdminStaticTranslations() {
 
     const resetBtnSpan = document.querySelector('button[onclick="clearAllOrders()"] span');
     if (resetBtnSpan) resetBtnSpan.innerText = t('admin_reset');
+
+    const hintMetricRev = document.getElementById('hint-metric-revenue');
+    if (hintMetricRev) hintMetricRev.innerText = t('admin_click_to_extract');
+
+    const labelReportBtn = document.getElementById('label-report-btn');
+    if (labelReportBtn) labelReportBtn.innerText = t('admin_daily_title');
+
+    const labelArchivesBtn = document.getElementById('label-archives-btn');
+    if (labelArchivesBtn) labelArchivesBtn.innerText = t('admin_btn_archives');
+
+    const dailyModalTitle = document.getElementById('daily-modal-title');
+    if (dailyModalTitle) dailyModalTitle.innerText = t('admin_daily_title');
+
+    const dailyModalSub = document.getElementById('daily-modal-subtitle');
+    if (dailyModalSub) dailyModalSub.innerText = t('admin_daily_subtitle');
+
+    const kpiLabelRev = document.getElementById('kpi-label-revenue');
+    if (kpiLabelRev) kpiLabelRev.innerText = t('admin_metric_revenue');
+
+    const kpiLabelServed = document.getElementById('kpi-label-served');
+    if (kpiLabelServed) kpiLabelServed.innerText = t('admin_metric_served_count');
+
+    const kpiLabelItems = document.getElementById('kpi-label-items');
+    if (kpiLabelItems) kpiLabelItems.innerText = t('admin_metric_items');
+
+    const kpiLabelBasket = document.getElementById('kpi-label-basket');
+    if (kpiLabelBasket) kpiLabelBasket.innerText = t('admin_metric_avg_basket');
+
+    const labelExportCsv = document.getElementById('label-export-csv');
+    if (labelExportCsv) labelExportCsv.innerText = t('admin_btn_extract_csv');
+
+    const labelPrintZ = document.getElementById('label-print-zreport');
+    if (labelPrintZ) labelPrintZ.innerText = t('admin_btn_print_zreport');
+
+    const labelCopySum = document.getElementById('label-copy-summary');
+    if (labelCopySum) labelCopySum.innerText = t('admin_btn_copy_summary');
+
+    const dailyServedTitle = document.getElementById('daily-served-title');
+    if (dailyServedTitle) dailyServedTitle.innerText = t('admin_served_orders_title');
+
+    const archivesModalTitle = document.getElementById('archives-modal-title');
+    if (archivesModalTitle) archivesModalTitle.innerText = t('admin_archives_title');
+
+    const archivesModalSub = document.getElementById('archives-modal-subtitle');
+    if (archivesModalSub) archivesModalSub.innerText = t('admin_archives_subtitle');
+
+    const archivesInput = document.getElementById('archives-search-input');
+    if (archivesInput) archivesInput.placeholder = t('admin_search_archives');
+
+    const labelExportArch = document.getElementById('label-export-archives-csv');
+    if (labelExportArch) labelExportArch.innerText = t('admin_btn_extract_csv');
 }
 
 function checkAuthState() {
@@ -541,6 +593,21 @@ function renderAdminKDS() {
     if (countPreparing) countPreparing.innerText = preparingOrders.length;
     if (countCompleted) countCompleted.innerText = completedOrders.length;
 
+    // Update Archived Orders Badge
+    const countArchived = document.getElementById('count-archived');
+    const archivedOrders = (typeof KopiSync !== 'undefined') ? KopiSync.getArchivedOrders() : JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
+    if (countArchived) countArchived.innerText = archivedOrders.length;
+
+    // Refresh open report modals if currently open
+    const dailyModal = document.getElementById('daily-summary-modal-overlay');
+    if (dailyModal && dailyModal.classList.contains('open')) {
+        renderDailySummary();
+    }
+    const archivesModal = document.getElementById('archived-orders-modal-overlay');
+    if (archivesModal && archivesModal.classList.contains('open')) {
+        renderArchivedOrders();
+    }
+
     if (!container) return;
 
     // Filter by status tab
@@ -724,15 +791,22 @@ function deleteOrder(orderId) {
     if (!confirm(t('admin_confirm_archive'))) return;
 
     if (typeof KopiSync !== 'undefined') {
-        KopiSync.deleteOrder(orderId);
+        KopiSync.archiveOrder(orderId);
     } else {
         let orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            order.archivedAt = new Date().toISOString();
+            let archived = JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
+            archived.unshift(order);
+            localStorage.setItem('kopiArchivedOrders', JSON.stringify(archived));
+        }
         orders = orders.filter(o => o.id !== orderId);
         localStorage.setItem('kopiOrders', JSON.stringify(orders));
     }
 
     renderAdminKDS();
-    showToast(t('admin_btn_archive'), "trash");
+    showToast(t('admin_btn_archive'), "archive");
 }
 
 function setAdminFilter(filter) {
@@ -766,7 +840,11 @@ function clearAllOrders() {
 // ==========================================================================
 function printReceipt(orderId) {
     const orders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-    const order = orders.find(o => o.id === orderId);
+    let order = orders.find(o => o.id === orderId);
+    if (!order) {
+        const archived = (typeof KopiSync !== 'undefined') ? KopiSync.getArchivedOrders() : JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
+        order = archived.find(o => o.id === orderId);
+    }
     if (!order) return;
 
     const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
@@ -845,5 +923,488 @@ function printReceipt(orderId) {
         </html>
     `);
     printWindow.document.close();
+}
+
+// ==========================================================================
+// DAILY SUMMARY & SERVED ORDERS REPORT (KDS EXTENSION)
+// ==========================================================================
+function getDailyServedOrders() {
+    const activeOrders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+    const archivedOrders = (typeof KopiSync !== 'undefined') ? KopiSync.getArchivedOrders() : JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
+    
+    // Combine and deduplicate by id
+    const combined = [...activeOrders, ...archivedOrders];
+    const uniqueOrders = [];
+    const seen = new Set();
+    
+    for (const o of combined) {
+        if (!seen.has(o.id)) {
+            seen.add(o.id);
+            uniqueOrders.push(o);
+        }
+    }
+    
+    // Return all orders that have been served / completed
+    return uniqueOrders.filter(o => o.status === 'completed');
+}
+
+function openDailySummaryModal() {
+    const overlay = document.getElementById('daily-summary-modal-overlay');
+    if (overlay) {
+        overlay.classList.add('open');
+        renderDailySummary();
+    }
+}
+
+function closeDailySummaryModal(e) {
+    if (e && e.target && e.target.id !== 'daily-summary-modal-overlay') return;
+    const overlay = document.getElementById('daily-summary-modal-overlay');
+    if (overlay) overlay.classList.remove('open');
+}
+
+function renderDailySummary() {
+    const container = document.getElementById('daily-served-list-container');
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const currency = t('currency');
+
+    const servedOrders = getDailyServedOrders();
+    const totalRevenue = servedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalItems = servedOrders.reduce((sum, o) => sum + (o.items || []).reduce((isum, i) => isum + (i.quantity || 1), 0), 0);
+    const avgBasket = servedOrders.length > 0 ? (totalRevenue / servedOrders.length) : 0;
+
+    // Update KPI Elements in Modal
+    const valRev = document.getElementById('kpi-val-revenue');
+    const valServed = document.getElementById('kpi-val-served');
+    const valItems = document.getElementById('kpi-val-items');
+    const valBasket = document.getElementById('kpi-val-basket');
+    const badgeServed = document.getElementById('daily-served-count-badge');
+
+    if (valRev) valRev.innerText = `${totalRevenue.toFixed(1)} ${currency}`;
+    if (valServed) valServed.innerText = servedOrders.length;
+    if (valItems) valItems.innerText = totalItems;
+    if (valBasket) valBasket.innerText = `${avgBasket.toFixed(1)} ${currency}`;
+    if (badgeServed) badgeServed.innerText = servedOrders.length;
+
+    if (!container) return;
+
+    if (servedOrders.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 45px 20px; color: var(--text-muted); background: linear-gradient(145deg, rgba(17, 26, 40, 0.9), rgba(12, 18, 29, 0.95)); border-radius: var(--radius-md); border: 1px dashed var(--gold-border);">
+                <div style="margin-bottom: 12px; color: var(--gold-light);">${getIcon('tray', 'icon-svg-xl')}</div>
+                <h3 style="color: var(--gold-light); font-size: 1.15rem; margin-bottom: 6px;">${t('admin_no_served_orders')}</h3>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    servedOrders.forEach(order => {
+        const card = document.createElement('div');
+        card.className = 'report-order-card';
+
+        const orderDate = order.timestamp || order.createdAt;
+        const formattedTime = orderDate ? new Date(orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : (order.timeStr || '');
+        const formattedDate = orderDate ? new Date(orderDate).toLocaleDateString() : '';
+
+        const itemsText = (order.items || []).map(i => {
+            const name = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(i) : i.name;
+            return `<strong>${i.quantity || 1}x</strong> ${name}`;
+        }).join(' • ');
+
+        card.innerHTML = `
+            <div class="report-order-left">
+                <div class="report-order-badge-row">
+                    <span class="report-table-tag">${t('admin_order_card_table')} ${order.table}</span>
+                    <span class="report-order-id">#${order.id}</span>
+                    <span class="report-order-time">
+                        ${getIcon('clock')} <span>${formattedDate ? formattedDate + ' ' : ''}${formattedTime}</span>
+                    </span>
+                    <span class="status-badge status-badge-completed">
+                        ${getIcon('check')} <span>${t('admin_filter_completed')}</span>
+                    </span>
+                </div>
+                <div class="report-order-items-summary">${itemsText}</div>
+                ${order.notes ? `<div class="report-order-note-snippet">${getIcon('note')} ${order.notes}</div>` : ''}
+            </div>
+            <div class="report-order-right">
+                <span class="report-order-total-val">${(order.total || 0).toFixed(1)} ${currency}</span>
+                <button type="button" class="btn-ticket-mini" onclick="printReceipt('${order.id}')" title="${t('admin_btn_print')}">
+                    ${getIcon('print')} <span>${t('admin_btn_print')}</span>
+                </button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function exportDailyOrdersCSV() {
+    const servedOrders = getDailyServedOrders();
+    const isAr = (typeof KOPI_I18N !== 'undefined' && KOPI_I18N.currentLang === 'ar');
+    const currency = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.t('currency') : 'DT';
+
+    if (servedOrders.length === 0) {
+        showToast(isAr ? "لا توجد طلبات مقدمة لتصديرها" : "Aucune commande servie à exporter", "tray");
+        return;
+    }
+
+    const headers = isAr ? 
+        ["معرف الطلب", "التاريخ", "الوقت", "رقم الطاولة", "المحتويات", "الملاحظات", `المجموع (${currency})`, "الحالة"] :
+        ["ID Commande", "Date", "Heure", "Table", "Articles", "Instructions", `Total (${currency})`, "Statut"];
+
+    const rows = servedOrders.map(o => {
+        const orderDate = o.timestamp || o.createdAt;
+        const dateStr = orderDate ? new Date(orderDate).toLocaleDateString() : (new Date().toLocaleDateString());
+        const timeStr = o.timeStr || (orderDate ? new Date(orderDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+        const itemsStr = (o.items || []).map(i => {
+            const name = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(i) : i.name;
+            return `${i.quantity || 1}x ${name}`;
+        }).join(" | ");
+        const notesStr = (o.notes || "").split('"').join('""');
+
+        return [
+            o.id,
+            dateStr,
+            timeStr,
+            o.table,
+            `"${itemsStr.split('"').join('""')}"`,
+            `"${notesStr}"`,
+            (o.total || 0).toFixed(1),
+            o.status
+        ];
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const todayStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `kopi-koffee-cloture-${todayStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(isAr ? "تم تصدير ملف CSV بنجاح !" : "Fichier CSV exporté avec succès !", "download");
+}
+
+function printDailyClosureReport() {
+    const servedOrders = getDailyServedOrders();
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const currency = t('currency');
+    const isAr = (typeof KOPI_I18N !== 'undefined' && KOPI_I18N.currentLang === 'ar');
+
+    const totalRevenue = servedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalItems = servedOrders.reduce((sum, o) => sum + (o.items || []).reduce((isum, i) => isum + (i.quantity || 1), 0), 0);
+    const avgBasket = servedOrders.length > 0 ? (totalRevenue / servedOrders.length) : 0;
+
+    // Aggregate sold items frequency
+    const itemMap = {};
+    servedOrders.forEach(o => {
+        (o.items || []).forEach(i => {
+            const name = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(i) : i.name;
+            if (!itemMap[name]) {
+                itemMap[name] = { qty: 0, revenue: 0 };
+            }
+            const q = i.quantity || 1;
+            itemMap[name].qty += q;
+            itemMap[name].revenue += (i.price || 0) * q;
+        });
+    });
+
+    const itemRows = Object.keys(itemMap).sort((a, b) => itemMap[b].qty - itemMap[a].qty).map(name => `
+        <tr>
+            <td style="padding: 4px 0;"><strong>${itemMap[name].qty}x</strong> ${name}</td>
+            <td style="text-align: right; padding: 4px 0;">${itemMap[name].revenue.toFixed(1)} ${currency}</td>
+        </tr>
+    `).join('');
+
+    const ordersRows = servedOrders.map(o => {
+        const timeStr = o.timeStr || (o.timestamp ? new Date(o.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '');
+        return `
+            <tr>
+                <td style="padding: 4px 0;">#${o.id} • ${t('admin_order_card_table')} ${o.table} (${timeStr})</td>
+                <td style="text-align: right; padding: 4px 0; font-weight: bold;">${(o.total || 0).toFixed(1)} ${currency}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const printWindow = window.open('', '_blank', 'width=420,height=700');
+    if (!printWindow) {
+        alert(isAr ? "يرجى السماح بالنوافذ المنبثقة لطباعة التقرير." : "Veuillez autoriser les fenêtres pop-up pour imprimer le rapport.");
+        return;
+    }
+
+    const nowStr = new Date().toLocaleString(isAr ? 'ar-TN' : 'fr-FR');
+
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html dir="${isAr ? 'rtl' : 'ltr'}" lang="${isAr ? 'ar' : 'fr'}">
+        <head>
+            <title>${t('admin_daily_title')} - Kopi Koffee</title>
+            <style>
+                body {
+                    font-family: ${isAr ? "'Cairo', Tahoma, sans-serif" : "'Courier New', Courier, monospace"};
+                    padding: 14px;
+                    width: 300px;
+                    margin: 0 auto;
+                    color: #000;
+                    font-size: 13px;
+                }
+                .text-center { text-align: center; }
+                .divider { border-top: 1px dashed #000; margin: 10px 0; }
+                table { width: 100%; border-collapse: collapse; }
+                h2 { margin: 2px 0; font-size: 18px; }
+                .kpi-row { display: flex; justify-content: space-between; margin: 3px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="text-center">
+                <h2>${t('receipt_title')}</h2>
+                <p style="margin: 2px 0; font-size: 11px;">Food & Drink • Café Lounge</p>
+                <h3 style="margin: 6px 0; font-size: 14px; text-transform: uppercase;">${t('admin_daily_title')}</h3>
+                <p style="font-size: 11px; margin: 2px 0;">${nowStr}</p>
+            </div>
+            <div class="divider"></div>
+            <div>
+                <div class="kpi-row"><strong>${t('admin_metric_revenue')} :</strong> <span style="font-size: 16px; font-weight: bold;">${totalRevenue.toFixed(1)} ${currency}</span></div>
+                <div class="kpi-row"><span>${t('admin_metric_served_count')} :</span> <span>${servedOrders.length}</span></div>
+                <div class="kpi-row"><span>${t('admin_metric_items')} :</span> <span>${totalItems}</span></div>
+                <div class="kpi-row"><span>${t('admin_metric_avg_basket')} :</span> <span>${avgBasket.toFixed(1)} ${currency}</span></div>
+            </div>
+            <div class="divider"></div>
+            <div style="font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('admin_articles_sold')}</div>
+            <table>
+                ${itemRows || `<tr><td>-</td></tr>`}
+            </table>
+            <div class="divider"></div>
+            <div style="font-weight: bold; margin-bottom: 6px; text-transform: uppercase;">${t('admin_served_orders_title')}</div>
+            <table>
+                ${ordersRows || `<tr><td>-</td></tr>`}
+            </table>
+            <div class="divider"></div>
+            <div class="text-center" style="font-size: 11px; margin-top: 10px;">
+                *** CLÔTURE DU JOUR VALIDÉE ***
+            </div>
+            <script>
+                window.onload = function() {
+                    window.print();
+                    setTimeout(function() { window.close(); }, 500);
+                };
+            </script>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+}
+
+function copyDailySummaryText() {
+    const servedOrders = getDailyServedOrders();
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const currency = t('currency');
+    const totalRev = servedOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+    const totalIt = servedOrders.reduce((sum, o) => sum + (o.items || []).reduce((isum, i) => isum + (i.quantity || 1), 0), 0);
+    const dateStr = new Date().toLocaleDateString();
+
+    const summaryText = `*KOPI KOFFEE - ${t('admin_daily_title')}*
+Date: ${dateStr}
+------------------------
+• ${t('admin_metric_revenue')}: ${totalRev.toFixed(1)} ${currency}
+• ${t('admin_metric_served_count')}: ${servedOrders.length}
+• ${t('admin_metric_items')}: ${totalIt}
+• ${t('admin_metric_avg_basket')}: ${(servedOrders.length ? (totalRev / servedOrders.length) : 0).toFixed(1)} ${currency}
+------------------------`;
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(summaryText).then(() => {
+            showToast(t('admin_toast_summary_copied'), "copy");
+        }).catch(() => {
+            showToast(t('admin_toast_summary_copied'), "check");
+        });
+    } else {
+        showToast(t('admin_toast_summary_copied'), "check");
+    }
+}
+
+// ==========================================================================
+// ARCHIVED ORDERS MANAGEMENT (WITH TIMESTAMPS & RESTORATION)
+// ==========================================================================
+function openArchivedOrdersModal() {
+    const overlay = document.getElementById('archived-orders-modal-overlay');
+    if (overlay) {
+        overlay.classList.add('open');
+        renderArchivedOrders();
+    }
+}
+
+function closeArchivedOrdersModal(e) {
+    if (e && e.target && e.target.id !== 'archived-orders-modal-overlay') return;
+    const overlay = document.getElementById('archived-orders-modal-overlay');
+    if (overlay) overlay.classList.remove('open');
+}
+
+function handleArchivesSearch(query) {
+    archivesSearchQuery = (query || '').toLowerCase().trim();
+    renderArchivedOrders();
+}
+
+function renderArchivedOrders() {
+    const container = document.getElementById('archives-list-container');
+    if (!container) return;
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const isAr = (typeof KOPI_I18N !== 'undefined' && KOPI_I18N.currentLang === 'ar');
+    const currency = t('currency');
+
+    let archived = (typeof KopiSync !== 'undefined') ? KopiSync.getArchivedOrders() : JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
+
+    const countArchived = document.getElementById('count-archived');
+    if (countArchived) countArchived.innerText = archived.length;
+
+    if (archivesSearchQuery.length > 0) {
+        archived = archived.filter(o => {
+            const tableMatch = String(o.table || '').toLowerCase().includes(archivesSearchQuery);
+            const idMatch = String(o.id || '').toLowerCase().includes(archivesSearchQuery);
+            const itemsMatch = (o.items || []).some(item => {
+                const name = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(item).toLowerCase() : (item.name || '').toLowerCase();
+                return name.includes(archivesSearchQuery);
+            });
+            return tableMatch || idMatch || itemsMatch;
+        });
+    }
+
+    if (archived.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 45px 20px; color: var(--text-muted); background: linear-gradient(145deg, rgba(17, 26, 40, 0.9), rgba(12, 18, 29, 0.95)); border-radius: var(--radius-md); border: 1px dashed var(--gold-border);">
+                <div style="margin-bottom: 12px; color: var(--gold-light);">${getIcon('archive', 'icon-svg-xl')}</div>
+                <h3 style="color: var(--gold-light); font-size: 1.15rem; margin-bottom: 6px;">${t('admin_no_archives')}</h3>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = '';
+    archived.forEach(order => {
+        const card = document.createElement('div');
+        card.className = 'report-order-card';
+
+        const createdDate = order.timestamp || order.createdAt;
+        const createdFormatted = createdDate ? new Date(createdDate).toLocaleString(isAr ? 'ar-TN' : 'fr-FR', {
+            day: '2-digit', month: '2-digit', year: 'numeric',
+            hour: '2-digit', minute: '2-digit'
+        }) : (order.timeStr || '');
+
+        const archivedDate = order.archivedAt ? new Date(order.archivedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+        const itemsText = (order.items || []).map(i => {
+            const name = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(i) : i.name;
+            return `<strong>${i.quantity || 1}x</strong> ${name}`;
+        }).join(' • ');
+
+        card.innerHTML = `
+            <div class="report-order-left">
+                <div class="report-order-badge-row">
+                    <span class="report-table-tag">${t('admin_order_card_table')} ${order.table}</span>
+                    <span class="report-order-id">#${order.id}</span>
+                    <span class="report-order-time" title="${t('admin_created_at')}">
+                        ${getIcon('clock')} <span>${t('admin_created_at')} ${createdFormatted}</span>
+                    </span>
+                    ${archivedDate ? `<span class="report-archived-time">${getIcon('archive')} <span>${t('admin_archived_at')} ${archivedDate}</span></span>` : ''}
+                </div>
+                <div class="report-order-items-summary">${itemsText}</div>
+                ${order.notes ? `<div class="report-order-note-snippet">${getIcon('note')} ${order.notes}</div>` : ''}
+            </div>
+            <div class="report-order-right">
+                <span class="report-order-total-val">${(order.total || 0).toFixed(1)} ${currency}</span>
+                <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="btn-ticket-mini" onclick="restoreArchivedOrder('${order.id}')" title="${t('admin_btn_restore')}">
+                        ${getIcon('restore')} <span>${t('admin_btn_restore')}</span>
+                    </button>
+                    <button type="button" class="btn-ticket-mini" onclick="printReceipt('${order.id}')" title="${t('admin_btn_print')}">
+                        ${getIcon('print')} <span>${t('admin_btn_print')}</span>
+                    </button>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function restoreArchivedOrder(orderId) {
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    if (!confirm(t('admin_confirm_restore'))) return;
+
+    if (typeof KopiSync !== 'undefined') {
+        KopiSync.restoreOrder(orderId);
+    } else {
+        let archived = JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
+        const order = archived.find(o => o.id === orderId);
+        if (order) {
+            delete order.archivedAt;
+            archived = archived.filter(o => o.id !== orderId);
+            localStorage.setItem('kopiArchivedOrders', JSON.stringify(archived));
+
+            let orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+            orders.unshift(order);
+            localStorage.setItem('kopiOrders', JSON.stringify(orders));
+        }
+    }
+
+    SoundFX.actionSuccess();
+    renderArchivedOrders();
+    renderAdminKDS();
+    showToast(t('admin_toast_restored'), "check");
+}
+
+function exportArchivedOrdersCSV() {
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const isAr = (typeof KOPI_I18N !== 'undefined' && KOPI_I18N.currentLang === 'ar');
+    const currency = t('currency');
+
+    const archived = (typeof KopiSync !== 'undefined') ? KopiSync.getArchivedOrders() : JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
+
+    if (archived.length === 0) {
+        showToast(t('admin_no_archives'), "archive");
+        return;
+    }
+
+    const headers = isAr ? 
+        ["معرف الطلب", "تاريخ الإنشاء", "تاريخ الأرشفة", "رقم الطاولة", "المحتويات", "الملاحظات", `المجموع (${currency})`, "الحالة"] :
+        ["ID Commande", "Date Création", "Date Archivage", "Table", "Articles", "Instructions", `Total (${currency})`, "Statut"];
+
+    const rows = archived.map(o => {
+        const createdDate = o.timestamp || o.createdAt;
+        const createdStr = createdDate ? new Date(createdDate).toLocaleString() : (o.timeStr || '');
+        const archivedStr = o.archivedAt ? new Date(o.archivedAt).toLocaleString() : '';
+        const itemsStr = (o.items || []).map(i => {
+            const name = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(i) : i.name;
+            return `${i.quantity || 1}x ${name}`;
+        }).join(" | ");
+        const notesStr = (o.notes || "").split('"').join('""');
+
+        return [
+            o.id,
+            `"${createdStr}"`,
+            `"${archivedStr}"`,
+            o.table,
+            `"${itemsStr.split('"').join('""')}"`,
+            `"${notesStr}"`,
+            (o.total || 0).toFixed(1),
+            o.status || 'archived'
+        ];
+    });
+
+    const csvContent = "\uFEFF" + [headers.join(","), ...rows.map(r => r.join(","))].join("\r\n");
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const todayStr = new Date().toISOString().slice(0, 10);
+    a.href = url;
+    a.download = `kopi-koffee-archives-${todayStr}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    showToast(isAr ? "تم تصدير أرشيف CSV بنجاح !" : "Archives CSV exportées avec succès !", "download");
 }
 

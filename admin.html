@@ -193,7 +193,7 @@
                     </div>
                 </div>
 
-                <div class="metric-card card-revenue">
+                <div class="metric-card card-revenue clickable-metric" onclick="openDailySummaryModal()" role="button" tabindex="0" title="Cliquer pour voir et extraire les commandes de la journée">
                     <div class="metric-icon">
                         <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <circle cx="12" cy="12" r="10"/>
@@ -204,7 +204,8 @@
                     </div>
                     <div>
                         <div id="metric-today-revenue" class="metric-value">0.0 DT</div>
-                        <div class="metric-label">Recette totale du jour</div>
+                        <div class="metric-label" id="label-metric-revenue">Recette totale du jour</div>
+                        <div class="metric-subhint" id="hint-metric-revenue">Toucher pour voir les commandes servies & extraire</div>
                     </div>
                 </div>
 
@@ -261,6 +262,25 @@
 
                 <!-- Action Controls -->
                 <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                    <button class="filter-btn btn-report-view" onclick="openDailySummaryModal()" title="Rapport de clôture & extraction journalière">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                        <span id="label-report-btn">Rapport Clôture</span>
+                    </button>
+
+                    <button class="filter-btn btn-archive-view" id="btn-open-archives" onclick="openArchivedOrdersModal()" title="Consulter l'historique des commandes archivées">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="21 8 21 21 3 21 3 8"/>
+                            <rect x="1" y="3" width="22" height="5"/>
+                            <line x1="10" y1="12" x2="14" y2="12"/>
+                        </svg>
+                        <span id="label-archives-btn">Archives</span>
+                        <span id="count-archived" class="filter-count-badge">0</span>
+                    </button>
+
                     <button class="filter-btn" onclick="manualRefreshKDS()" title="Actualiser manuellement">
                         <svg id="refresh-icon" class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="23 4 23 10 17 10"/>
@@ -288,6 +308,133 @@
 
         </main>
 
+    </div>
+
+    <!-- ================================================================
+         DAILY SUMMARY & SERVED ORDERS EXTRACTION MODAL
+         ================================================================ -->
+    <div id="daily-summary-modal-overlay" class="modal-overlay" onclick="closeDailySummaryModal(event)">
+        <div class="kopi-report-modal" onclick="event.stopPropagation()">
+            <div class="report-modal-header">
+                <div class="report-header-left">
+                    <span class="report-header-icon">
+                        <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <h2 id="daily-modal-title" class="report-title">Rapport de Clôture Journalier</h2>
+                        <p id="daily-modal-subtitle" class="report-subtitle">Commandes servies & récapitulatif des ventes du jour</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" onclick="closeDailySummaryModal()" title="Fermer">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Summary KPI Cards -->
+            <div class="report-kpi-grid">
+                <div class="report-kpi-card highlight-revenue">
+                    <span class="kpi-label" id="kpi-label-revenue">Recette Servie</span>
+                    <span class="kpi-value" id="kpi-val-revenue">0.0 DT</span>
+                </div>
+                <div class="report-kpi-card">
+                    <span class="kpi-label" id="kpi-label-served">Commandes Servies</span>
+                    <span class="kpi-value" id="kpi-val-served">0</span>
+                </div>
+                <div class="report-kpi-card">
+                    <span class="kpi-label" id="kpi-label-items">Articles Préparés</span>
+                    <span class="kpi-value" id="kpi-val-items">0</span>
+                </div>
+                <div class="report-kpi-card">
+                    <span class="kpi-label" id="kpi-label-basket">Panier Moyen</span>
+                    <span class="kpi-value" id="kpi-val-basket">0.0 DT</span>
+                </div>
+            </div>
+
+            <!-- Extraction Toolbar -->
+            <div class="report-actions-bar">
+                <button type="button" class="btn-export-primary" onclick="exportDailyOrdersCSV()">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    <span id="label-export-csv">Exporter CSV (Excel)</span>
+                </button>
+                <button type="button" class="btn-export-secondary" onclick="printDailyClosureReport()">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
+                    </svg>
+                    <span id="label-print-zreport">Imprimer Rapport Z</span>
+                </button>
+                <button type="button" class="btn-export-secondary" onclick="copyDailySummaryText()">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                    </svg>
+                    <span id="label-copy-summary">Copier le Résumé</span>
+                </button>
+            </div>
+
+            <!-- Served Orders List Container -->
+            <div class="report-section-header">
+                <h3 id="daily-served-title">Détail des Commandes Servies</h3>
+                <span id="daily-served-count-badge" class="badge-pill">0</span>
+            </div>
+            <div id="daily-served-list-container" class="report-orders-scroll"></div>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         ARCHIVED ORDERS HISTORY MODAL (WITH DATES & TIMESTAMPS)
+         ================================================================ -->
+    <div id="archived-orders-modal-overlay" class="modal-overlay" onclick="closeArchivedOrdersModal(event)">
+        <div class="kopi-report-modal" onclick="event.stopPropagation()">
+            <div class="report-modal-header">
+                <div class="report-header-left">
+                    <span class="report-header-icon">
+                        <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="21 8 21 21 3 21 3 8"/>
+                            <rect x="1" y="3" width="22" height="5"/>
+                            <line x1="10" y1="12" x2="14" y2="12"/>
+                        </svg>
+                    </span>
+                    <div>
+                        <h2 id="archives-modal-title" class="report-title">Historique des Commandes Archivées</h2>
+                        <p id="archives-modal-subtitle" class="report-subtitle">Toutes les commandes passées conservées avec dates, heures et détails</p>
+                    </div>
+                </div>
+                <button type="button" class="report-modal-close" onclick="closeArchivedOrdersModal()" title="Fermer">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Search & Actions Bar inside Archives -->
+            <div class="report-actions-bar" style="justify-content: space-between;">
+                <div class="admin-search-wrapper" style="flex: 1; max-width: 380px;">
+                    <svg class="icon-svg admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                    </svg>
+                    <input type="text" id="archives-search-input" class="admin-search-input" placeholder="Rechercher table, ID, article..." oninput="handleArchivesSearch(this.value)">
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button type="button" class="btn-export-primary" onclick="exportArchivedOrdersCSV()">
+                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        <span id="label-export-archives-csv">Exporter Archives (CSV)</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Archived Orders Scroll List -->
+            <div id="archives-list-container" class="report-orders-scroll"></div>
+        </div>
     </div>
 
     <!-- Scripts -->

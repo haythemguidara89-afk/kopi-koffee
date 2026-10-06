@@ -25,6 +25,22 @@ const KopiSync = {
         }
     },
 
+    getArchivedOrders() {
+        try {
+            return JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
+        } catch (e) {
+            return [];
+        }
+    },
+
+    saveLocalArchivedOrders(archived) {
+        try {
+            localStorage.setItem('kopiArchivedOrders', JSON.stringify(archived));
+        } catch (e) {
+            console.error('Failed to save archived orders to localStorage', e);
+        }
+    },
+
     addListener(fn) {
         if (typeof fn === 'function' && !this.listeners.includes(fn)) {
             this.listeners.push(fn);
@@ -105,14 +121,27 @@ const KopiSync = {
         }
     },
 
-    // Delete or archive order
-    async deleteOrder(orderId) {
-        let orders = this.getOrders().filter(o => o.id !== orderId);
+    // Archive an order safely with timestamps
+    async archiveOrder(orderId) {
+        let orders = this.getOrders();
+        const order = orders.find(o => o.id === orderId);
+        if (!order) return;
+
+        order.archivedAt = new Date().toISOString();
+
+        orders = orders.filter(o => o.id !== orderId);
         this.saveLocalOrders(orders);
 
+        let archived = this.getArchivedOrders();
+        if (!archived.some(a => a.id === orderId)) {
+            archived.unshift(order);
+            this.saveLocalArchivedOrders(archived);
+        }
+
         const payload = {
-            event: "delete_order",
+            event: "archive_order",
             orderId: orderId,
+            order: order,
             sentAt: Date.now()
         };
 
@@ -128,6 +157,50 @@ const KopiSync = {
                 body: JSON.stringify(payload)
             });
         } catch (err) {}
+    },
+
+    // Restore an archived order back to active kitchen display
+    async restoreOrder(orderId) {
+        let archived = this.getArchivedOrders();
+        const order = archived.find(a => a.id === orderId);
+        if (!order) return;
+
+        archived = archived.filter(a => a.id !== orderId);
+        this.saveLocalArchivedOrders(archived);
+
+        let restoredOrder = { ...order };
+        delete restoredOrder.archivedAt;
+
+        let orders = this.getOrders();
+        if (!orders.some(o => o.id === orderId)) {
+            orders.unshift(restoredOrder);
+            this.saveLocalOrders(orders);
+        }
+
+        const payload = {
+            event: "restore_order",
+            orderId: orderId,
+            order: restoredOrder,
+            sentAt: Date.now()
+        };
+
+        if (this.channel) {
+            try { this.channel.postMessage(payload); } catch (e) {}
+        }
+        this.notifyListeners(payload);
+
+        try {
+            await fetch(KOPI_SYNC_ENDPOINT, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+        } catch (err) {}
+    },
+
+    // Delete or archive order (routes to archiveOrder so past orders are never lost)
+    async deleteOrder(orderId) {
+        return this.archiveOrder(orderId);
     },
 
     // Pull historical/recent orders from cloud
@@ -164,6 +237,26 @@ const KopiSync = {
                             const prevLen = orders.length;
                             orders = orders.filter(o => o.id !== payload.orderId);
                             if (orders.length !== prevLen) changed = true;
+                        } else if (payload.event === "archive_order" && payload.orderId) {
+                            const prevLen = orders.length;
+                            orders = orders.filter(o => o.id !== payload.orderId);
+                            if (orders.length !== prevLen) changed = true;
+
+                            let archived = this.getArchivedOrders();
+                            if (payload.order && !archived.some(a => a.id === payload.orderId)) {
+                                archived.unshift(payload.order);
+                                this.saveLocalArchivedOrders(archived);
+                            }
+                        } else if (payload.event === "restore_order" && payload.orderId) {
+                            let archived = this.getArchivedOrders();
+                            const prevArchLen = archived.length;
+                            archived = archived.filter(a => a.id !== payload.orderId);
+                            if (archived.length !== prevArchLen) this.saveLocalArchivedOrders(archived);
+
+                            if (payload.order && !orders.some(o => o.id === payload.orderId)) {
+                                orders.unshift(payload.order);
+                                changed = true;
+                            }
                         }
                     }
                 } catch (e) {}
@@ -239,6 +332,26 @@ const KopiSync = {
             const prevLen = orders.length;
             orders = orders.filter(o => o.id !== payload.orderId);
             if (orders.length !== prevLen) changed = true;
+        } else if (payload.event === "archive_order" && payload.orderId) {
+            const prevLen = orders.length;
+            orders = orders.filter(o => o.id !== payload.orderId);
+            if (orders.length !== prevLen) changed = true;
+
+            let archived = this.getArchivedOrders();
+            if (payload.order && !archived.some(a => a.id === payload.orderId)) {
+                archived.unshift(payload.order);
+                this.saveLocalArchivedOrders(archived);
+            }
+        } else if (payload.event === "restore_order" && payload.orderId) {
+            let archived = this.getArchivedOrders();
+            const prevArchLen = archived.length;
+            archived = archived.filter(a => a.id !== payload.orderId);
+            if (archived.length !== prevArchLen) this.saveLocalArchivedOrders(archived);
+
+            if (payload.order && !orders.some(o => o.id === payload.orderId)) {
+                orders.unshift(payload.order);
+                changed = true;
+            }
         }
 
         if (changed) {
