@@ -99,10 +99,24 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Initialize order count tracking
-    const initialOrders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+    const initialOrders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
     lastKnownOrderCount = initialOrders.length;
 
-    // Cross-Tab Real-time synchronization
+    // Listen to KopiSync for real-time cross-device and cross-tab order events
+    if (typeof KopiSync !== 'undefined') {
+        KopiSync.addListener((data) => {
+            if (data.event === 'new_order') {
+                SoundFX.newOrderAlert();
+                const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+                showToast(t('admin_order_notif'), "bell");
+                renderAdminKDS();
+            } else if (data.event === 'update_status' || data.event === 'delete_order' || data.event === 'remote_sync') {
+                renderAdminKDS();
+            }
+        });
+    }
+
+    // Cross-Tab Real-time synchronization fallback
     window.addEventListener('storage', (e) => {
         if (e.key === 'kopiOrders') {
             handleIncomingOrdersUpdate();
@@ -422,7 +436,7 @@ function clearAdminSearch() {
 // REAL-TIME SYNC & ORDER CHECKING
 // ==========================================================================
 function handleIncomingOrdersUpdate() {
-    const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+    const orders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
     const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
     if (orders.length > lastKnownOrderCount) {
         SoundFX.newOrderAlert();
@@ -433,7 +447,7 @@ function handleIncomingOrdersUpdate() {
 }
 
 function checkOrdersPoll() {
-    const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+    const orders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
     const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
     if (orders.length > lastKnownOrderCount) {
         SoundFX.newOrderAlert();
@@ -494,6 +508,7 @@ function updateElapsedTimesInDOM() {
 // KITCHEN DISPLAY SYSTEM (KDS) RENDERING
 // ==========================================================================
 function renderAdminKDS() {
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
     const container = document.getElementById('admin-orders-container');
     const metricPending = document.getElementById('metric-pending-orders');
     const metricPreparing = document.getElementById('metric-preparing-orders');
@@ -505,7 +520,7 @@ function renderAdminKDS() {
     const countPreparing = document.getElementById('count-preparing');
     const countCompleted = document.getElementById('count-completed');
 
-    const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+    const orders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
 
     const pendingOrders = orders.filter(o => o.status === 'pending');
     const preparingOrders = orders.filter(o => o.status === 'preparing');
@@ -685,26 +700,37 @@ function renderAdminKDS() {
 }
 
 function updateOrderStatus(orderId, newStatus) {
-    let orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-    const order = orders.find(o => o.id === orderId);
     const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
 
-    if (order) {
-        order.status = newStatus;
-        localStorage.setItem('kopiOrders', JSON.stringify(orders));
-        SoundFX.actionSuccess();
-        renderAdminKDS();
-        const statusLabel = newStatus === 'preparing' ? t('admin_filter_prep') : (newStatus === 'completed' ? t('admin_filter_completed') : newStatus);
-        showToast(`${t('receipt_order')} #${orderId} : ${statusLabel}`, "check");
+    if (typeof KopiSync !== 'undefined') {
+        KopiSync.updateOrderStatus(orderId, newStatus);
+    } else {
+        let orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+        const order = orders.find(o => o.id === orderId);
+        if (order) {
+            order.status = newStatus;
+            localStorage.setItem('kopiOrders', JSON.stringify(orders));
+        }
     }
+
+    SoundFX.actionSuccess();
+    renderAdminKDS();
+    const statusLabel = newStatus === 'preparing' ? t('admin_filter_prep') : (newStatus === 'completed' ? t('admin_filter_completed') : newStatus);
+    showToast(`${t('receipt_order')} #${orderId} : ${statusLabel}`, "check");
 }
 
 function deleteOrder(orderId) {
     const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
     if (!confirm(t('admin_confirm_archive'))) return;
-    let orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-    orders = orders.filter(o => o.id !== orderId);
-    localStorage.setItem('kopiOrders', JSON.stringify(orders));
+
+    if (typeof KopiSync !== 'undefined') {
+        KopiSync.deleteOrder(orderId);
+    } else {
+        let orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+        orders = orders.filter(o => o.id !== orderId);
+        localStorage.setItem('kopiOrders', JSON.stringify(orders));
+    }
+
     renderAdminKDS();
     showToast(t('admin_btn_archive'), "trash");
 }
@@ -724,7 +750,13 @@ function setAdminFilter(filter) {
 function clearAllOrders() {
     const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
     if (!confirm(t('admin_confirm_reset'))) return;
-    localStorage.setItem('kopiOrders', JSON.stringify([]));
+
+    if (typeof KopiSync !== 'undefined') {
+        KopiSync.saveLocalOrders([]);
+    } else {
+        localStorage.setItem('kopiOrders', JSON.stringify([]));
+    }
+
     renderAdminKDS();
     showToast(t('admin_reset'), "broom");
 }
@@ -733,7 +765,7 @@ function clearAllOrders() {
 // TICKET PRINTING (Thermal 58mm / 80mm format)
 // ==========================================================================
 function printReceipt(orderId) {
-    const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+    const orders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 

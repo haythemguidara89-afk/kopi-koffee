@@ -92,6 +92,32 @@ document.addEventListener('DOMContentLoaded', () => {
     updateCartUI();
     checkCustomerOrderStatus();
 
+    // Real-time synchronization for customer order status tracking
+    if (typeof KopiSync !== 'undefined') {
+        KopiSync.addListener((data) => {
+            if (data.event === 'update_status' && data.orderId === customerActiveOrderId) {
+                checkCustomerOrderStatus();
+                if (data.status === 'completed') {
+                    SoundFX.orderSuccess();
+                }
+            } else if (data.event === 'remote_sync') {
+                checkCustomerOrderStatus();
+            }
+        });
+    }
+
+    // Cross-tab storage fallback
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'kopiOrders') {
+            checkCustomerOrderStatus();
+        }
+    });
+
+    // Periodic check backup (every 3 seconds)
+    setInterval(() => {
+        checkCustomerOrderStatus();
+    }, 3000);
+
     // Listen to global language change event (FR / AR)
     window.addEventListener('kopiLangChanged', () => {
         updateStaticTranslations();
@@ -978,9 +1004,13 @@ function submitOrder() {
         timeStr: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
-    orders.unshift(newOrder);
-    localStorage.setItem('kopiOrders', JSON.stringify(orders));
+    if (typeof KopiSync !== 'undefined') {
+        KopiSync.sendNewOrder(newOrder);
+    } else {
+        const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+        orders.unshift(newOrder);
+        localStorage.setItem('kopiOrders', JSON.stringify(orders));
+    }
 
     customerActiveOrderId = newOrder.id;
     localStorage.setItem('kopiActiveOrderId', customerActiveOrderId);
@@ -1001,7 +1031,7 @@ function submitOrder() {
 // ==========================================================================
 function checkCustomerOrderStatus() {
     if (!customerActiveOrderId) return;
-    const orders = JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+    const orders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
     const order = orders.find(o => o.id === customerActiveOrderId);
     if (!order) return;
 
