@@ -1785,7 +1785,8 @@ body::before {
     transition: opacity 0.3s ease;
 }
 
-.modal-overlay.open {
+.modal-overlay.open,
+.modal-overlay.active {
     opacity: 1;
     pointer-events: auto;
 }
@@ -3570,6 +3571,157 @@ body.rtl-mode h1, body.rtl-mode h2, body.rtl-mode h3, body.rtl-mode h4 {
         font-size: 0.76rem;
     }
 }
+
+/* ==============================================================================
+   PASSKEY & WEBAUTHN BIOMETRIC AUTHENTICATION STYLES
+   ============================================================================== */
+.passkey-login-container {
+    margin-bottom: 22px;
+}
+
+.btn-passkey-login {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 14px 20px;
+    background: linear-gradient(135deg, rgba(229, 166, 56, 0.22), rgba(200, 138, 30, 0.12));
+    border: 1.5px solid var(--gold-primary);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-size: 0.98rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.btn-passkey-login:hover {
+    background: linear-gradient(135deg, rgba(229, 166, 56, 0.35), rgba(200, 138, 30, 0.22));
+    border-color: var(--gold-light);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 24px rgba(229, 166, 56, 0.25);
+}
+
+.btn-passkey-login:active {
+    transform: translateY(0);
+}
+
+.btn-passkey-login .icon-svg {
+    width: 22px;
+    height: 22px;
+    color: var(--gold-light);
+}
+
+.passkey-divider {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    margin: 18px 0;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 700;
+}
+
+.passkey-divider::before,
+.passkey-divider::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid rgba(229, 166, 56, 0.2);
+}
+
+.passkey-divider:not(:empty)::before {
+    margin-right: 12px;
+}
+
+.passkey-divider:not(:empty)::after {
+    margin-left: 12px;
+}
+
+.passkey-recovery-toggle-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 10px;
+    transition: color 0.2s ease;
+}
+
+.passkey-recovery-toggle-btn:hover {
+    color: var(--gold-light);
+}
+
+.passkey-recovery-pane {
+    margin-top: 14px;
+    padding: 14px;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(229, 166, 56, 0.25);
+    border-radius: var(--radius-sm);
+}
+
+.passkey-table-wrapper {
+    overflow-x: auto;
+    margin-top: 14px;
+}
+
+.passkey-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.84rem;
+}
+
+.passkey-table th,
+.passkey-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[dir="rtl"] .passkey-table th,
+[dir="rtl"] .passkey-table td {
+    text-align: right;
+}
+
+.passkey-table th {
+    color: var(--gold-light);
+    font-weight: 700;
+}
+
+.passkey-badge-active {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: rgba(46, 204, 113, 0.15);
+    border: 1px solid rgba(46, 204, 113, 0.35);
+    color: #2ecc71;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.passkey-invite-url-box {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px dashed var(--gold-primary);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    margin: 14px 0;
+    word-break: break-all;
+    font-family: monospace;
+    font-size: 0.85rem;
+    color: var(--gold-light);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
 
 
 

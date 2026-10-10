@@ -9,6 +9,9 @@ let soundEnabled = localStorage.getItem('kopiSoundEnabled') !== 'false';
 let enteredPin = "";
 let lastKnownOrderCount = 0;
 let archivesSearchQuery = "";
+let currentInviteToken = null;
+let currentInviteAdminName = null;
+let lastGeneratedInviteUrl = "";
 
 // ==========================================================================
 // AUDIO SYNTHESIS FOR KITCHEN ALERTS (Native Web Audio API)
@@ -89,6 +92,7 @@ function showToast(message, iconKey = 'sparkle') {
 document.addEventListener('DOMContentLoaded', () => {
     updateAdminStaticTranslations();
     checkAuthState();
+    checkInviteTokenParam();
     startClock();
     setupSoundToggle();
     setupKeyboardListeners();
@@ -275,6 +279,76 @@ function updateAdminStaticTranslations() {
 
     const labelExportArch = document.getElementById('label-export-archives-csv');
     if (labelExportArch) labelExportArch.innerText = t('admin_btn_extract_csv');
+
+    // Passkey Biometrics & Security translations
+    const passkeyBtn = document.getElementById('label-passkey-btn');
+    if (passkeyBtn) passkeyBtn.innerText = t('passkey_login_btn');
+
+    const passkeyOr = document.getElementById('label-passkey-or');
+    if (passkeyOr) passkeyOr.innerText = t('passkey_or_pin');
+
+    const recToggle = document.getElementById('label-recovery-toggle');
+    if (recToggle) recToggle.innerText = t('passkey_recovery_toggle');
+
+    const recInput = document.getElementById('passkey-recovery-input');
+    if (recInput) recInput.placeholder = t('passkey_recovery_placeholder');
+
+    const recSubmit = document.getElementById('label-recovery-submit');
+    if (recSubmit) recSubmit.innerText = t('passkey_recovery_btn');
+
+    const secNav = document.getElementById('label-security-nav');
+    if (secNav) secNav.innerText = t('passkey_manage_nav_btn');
+
+    const invModalTitle = document.getElementById('invite-modal-title');
+    if (invModalTitle) invModalTitle.innerText = t('passkey_modal_invite_title');
+
+    const invModalSub = document.getElementById('invite-modal-subtitle');
+    if (invModalSub) invModalSub.innerText = t('passkey_modal_invite_desc');
+
+    const invWelcome = document.getElementById('label-invite-welcome');
+    if (invWelcome) invWelcome.innerText = t('passkey_welcome_team');
+
+    const invPrompt = document.getElementById('label-invite-prompt');
+    if (invPrompt) invPrompt.innerText = t('passkey_invite_prompt');
+
+    const invEnrollBtn = document.getElementById('label-invite-enroll-btn');
+    if (invEnrollBtn) invEnrollBtn.innerText = t('passkey_register_now');
+
+    const invSuccessTitle = document.getElementById('label-invite-success-title');
+    if (invSuccessTitle) invSuccessTitle.innerText = t('passkey_success_title');
+
+    const invSuccessDesc = document.getElementById('label-invite-success-desc');
+    if (invSuccessDesc) invSuccessDesc.innerText = t('passkey_success_desc');
+
+    const invEnterBtn = document.getElementById('label-invite-enter-btn');
+    if (invEnterBtn) invEnterBtn.innerText = t('passkey_enter_kds');
+
+    const secModalTitle = document.getElementById('security-modal-title');
+    if (secModalTitle) secModalTitle.innerText = t('passkey_manage_modal_title');
+
+    const secModalSub = document.getElementById('security-modal-subtitle');
+    if (secModalSub) secModalSub.innerText = t('passkey_manage_modal_desc');
+
+    const invSecTitle = document.querySelector('#label-invite-sec-title span');
+    if (invSecTitle) invSecTitle.innerText = t('passkey_create_invite_title');
+
+    const invSecDesc = document.getElementById('label-invite-sec-desc');
+    if (invSecDesc) invSecDesc.innerText = t('passkey_create_invite_desc');
+
+    const invNameInput = document.getElementById('invite-admin-name-input');
+    if (invNameInput) invNameInput.placeholder = t('passkey_staff_name_placeholder');
+
+    const btnGenInvite = document.getElementById('label-btn-generate-invite');
+    if (btnGenInvite) btnGenInvite.innerText = t('passkey_btn_generate');
+
+    const btnCopyInvite = document.getElementById('label-btn-copy-invite');
+    if (btnCopyInvite) btnCopyInvite.innerText = t('passkey_copy_link_short');
+
+    const invNotice = document.getElementById('label-invite-notice');
+    if (invNotice) invNotice.innerText = t('passkey_invite_notice');
+
+    const passkeysListTitle = document.querySelector('#label-passkeys-list-title span');
+    if (passkeysListTitle) passkeysListTitle.innerText = t('passkey_active_list_title');
 }
 
 function checkAuthState() {
@@ -1534,5 +1608,301 @@ function saveSupabaseSettings() {
         closeSupabaseModal();
     }, 600);
 }
+
+// ==========================================================================
+// PASSKEY BIOMETRIC & WEBAUTHN AUTHENTICATION HANDLERS
+// ==========================================================================
+async function handlePasskeyLogin() {
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    if (typeof KopiPasskey === 'undefined' || !KopiPasskey.isSupported()) {
+        showToast(t('passkey_no_biometrics'), 'alert-circle');
+        return;
+    }
+
+    try {
+        const res = await KopiPasskey.authenticateWithPasskey();
+        if (res && res.success) {
+            sessionStorage.setItem('kopiStaffAuth', 'true');
+            SoundFX.actionSuccess();
+            showToast(`${t('passkey_success_login')} (${res.adminName})`, 'shield-check');
+            showKDSView();
+        }
+    } catch (err) {
+        if (err.message === 'NO_PASSKEYS_REGISTERED') {
+            const isAr = (typeof KOPI_I18N !== 'undefined') && KOPI_I18N.currentLang === 'ar';
+            const msg = isAr ?
+                'لا توجد مفاتيح مرور مسجلة بعد. استخدم الرمز السري (10699) أو اطلب رابط تفعيل.' :
+                'Aucun Passkey enregistré. Utilisez le code PIN (10699) ou demandez un lien d\'activation.';
+            showToast(msg, 'alert-circle');
+            return;
+        }
+        if (err.name === 'NotAllowedError' || (err.message && err.message.includes('annul'))) {
+            return;
+        }
+        SoundFX.accessDenied();
+        showToast(err.message || 'Échec de la connexion biométrique', 'alert-circle');
+    }
+}
+
+function toggleRecoveryCodePane() {
+    const pane = document.getElementById('passkey-recovery-pane');
+    if (!pane) return;
+    const isHidden = (pane.style.display === 'none' || !pane.style.display);
+    pane.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+        const input = document.getElementById('passkey-recovery-input');
+        if (input) input.focus();
+    }
+}
+
+async function submitRecoveryCode() {
+    const input = document.getElementById('passkey-recovery-input');
+    const code = input ? input.value.trim() : '';
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+
+    if (!code) {
+        showToast(t('passkey_recovery_placeholder'), 'alert-circle');
+        return;
+    }
+
+    try {
+        const res = await KopiPasskey.authenticateWithRecoveryCode(code);
+        if (res && res.success) {
+            sessionStorage.setItem('kopiStaffAuth', 'true');
+            SoundFX.actionSuccess();
+            showToast(`${t('passkey_success_login')} (${res.adminName})`, 'shield-check');
+            showKDSView();
+        }
+    } catch (err) {
+        SoundFX.accessDenied();
+        showToast(err.message || 'Code de secours invalide', 'alert-circle');
+    }
+}
+
+// --------------------------------------------------------------------------
+// ONE-TIME INVITE URL PROCESSING
+// --------------------------------------------------------------------------
+async function checkInviteTokenParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('setup_passkey');
+    if (!token) return;
+
+    if (typeof KopiPasskey === 'undefined') {
+        setTimeout(checkInviteTokenParam, 200);
+        return;
+    }
+
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const validation = await KopiPasskey.validateInviteToken(token);
+
+    if (!validation.valid) {
+        let msg = "Lien d'invitation invalide.";
+        if (validation.reason === 'used') msg = "Ce lien d'invitation a déjà été utilisé.";
+        if (validation.reason === 'expired') msg = "Ce lien d'invitation a expiré.";
+        showToast(msg, 'alert-circle');
+        window.history.replaceState({}, document.title, window.location.pathname);
+        return;
+    }
+
+    currentInviteToken = token;
+    currentInviteAdminName = validation.adminName;
+
+    const modal = document.getElementById('passkey-invite-modal-overlay');
+    const nameDisplay = document.getElementById('invite-admin-name-display');
+    const stepSetup = document.getElementById('invite-step-setup');
+    const stepSuccess = document.getElementById('invite-step-success');
+
+    if (nameDisplay) nameDisplay.innerText = validation.adminName;
+    if (stepSetup) stepSetup.style.display = 'block';
+    if (stepSuccess) stepSuccess.style.display = 'none';
+
+    if (modal) modal.classList.add('open');
+}
+
+async function confirmPasskeyRegistration() {
+    if (!currentInviteToken) return;
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+
+    try {
+        const res = await KopiPasskey.registerPasskeyWithToken(currentInviteToken, currentInviteAdminName);
+        if (res && res.success) {
+            SoundFX.actionSuccess();
+            showToast(t('passkey_registered_success'), 'shield-check');
+
+            const stepSetup = document.getElementById('invite-step-setup');
+            const stepSuccess = document.getElementById('invite-step-success');
+            const codeDisplay = document.getElementById('invite-recovery-code-display');
+
+            if (stepSetup) stepSetup.style.display = 'none';
+            if (stepSuccess) stepSuccess.style.display = 'block';
+            if (codeDisplay) codeDisplay.innerText = res.recoveryCode;
+
+            // Clean query parameter from browser address bar
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+    } catch (err) {
+        if (err.name === 'NotAllowedError' || (err.message && err.message.includes('annul'))) {
+            return;
+        }
+        SoundFX.accessDenied();
+        showToast(err.message || "Erreur d'enregistrement", 'alert-circle');
+    }
+}
+
+function finishInviteAndEnterKDS() {
+    closeInviteModal();
+    sessionStorage.setItem('kopiStaffAuth', 'true');
+    showKDSView();
+}
+
+function closeInviteModal() {
+    const modal = document.getElementById('passkey-invite-modal-overlay');
+    if (modal) modal.classList.remove('open');
+    currentInviteToken = null;
+    currentInviteAdminName = null;
+}
+
+// --------------------------------------------------------------------------
+// SECURITY & PASSKEY MANAGEMENT MODAL
+// --------------------------------------------------------------------------
+function openSecurityModal() {
+    const modal = document.getElementById('security-modal-overlay');
+    if (!modal) return;
+
+    const resultBox = document.getElementById('invite-link-result-box');
+    if (resultBox) resultBox.style.display = 'none';
+
+    const input = document.getElementById('invite-admin-name-input');
+    if (input) input.value = '';
+
+    renderPasskeysList();
+    modal.classList.add('open');
+}
+
+function closeSecurityModal(e) {
+    if (e && e.target && e.target !== e.currentTarget && !e.target.classList.contains('report-modal-close')) return;
+    const modal = document.getElementById('security-modal-overlay');
+    if (modal) modal.classList.remove('open');
+}
+
+async function generateInviteLink() {
+    const input = document.getElementById('invite-admin-name-input');
+    const name = (input ? input.value : '').trim() || 'Staff Barista';
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+
+    try {
+        const invite = await KopiPasskey.createOneTimeInvite(name);
+        lastGeneratedInviteUrl = invite.inviteUrl;
+
+        const resultBox = document.getElementById('invite-link-result-box');
+        const urlDisplay = document.getElementById('invite-link-display-url');
+
+        if (urlDisplay) urlDisplay.innerText = invite.inviteUrl;
+        if (resultBox) resultBox.style.display = 'block';
+
+        showToast(t('passkey_link_copied'), 'check');
+    } catch (err) {
+        showToast(err.message || "Erreur lors de la création de l'invitation", 'alert-circle');
+    }
+}
+
+async function copyInviteUrl() {
+    if (!lastGeneratedInviteUrl) return;
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    try {
+        await navigator.clipboard.writeText(lastGeneratedInviteUrl);
+        showToast(t('passkey_link_copied'), 'check');
+    } catch (e) {
+        window.prompt("Copiez ce lien d'activation :", lastGeneratedInviteUrl);
+    }
+}
+
+async function renderPasskeysList() {
+    const container = document.getElementById('passkeys-list-container');
+    if (!container) return;
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+
+    container.innerHTML = `<div style="text-align: center; padding: 18px; color: var(--text-muted);">${getIcon('refresh')} Chargement...</div>`;
+
+    try {
+        const passkeys = await KopiPasskey.listPasskeys();
+        if (!passkeys || passkeys.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 24px; color: var(--text-muted); background: rgba(0,0,0,0.25); border-radius: 10px;">
+                    <div style="margin-bottom: 8px;">${getIcon('key')}</div>
+                    <div>${t('passkey_no_passkeys')}</div>
+                </div>
+            `;
+            return;
+        }
+
+        let html = `
+            <table class="passkey-table">
+                <thead>
+                    <tr>
+                        <th>${t('passkey_col_admin')}</th>
+                        <th>${t('passkey_col_created')}</th>
+                        <th>${t('passkey_col_last_used')}</th>
+                        <th>${t('passkey_col_recovery')}</th>
+                        <th style="text-align: center;">${t('passkey_col_actions')}</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        passkeys.forEach(pk => {
+            const created = new Date(pk.created_at).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const lastUsed = pk.last_used_at ? new Date(pk.last_used_at).toLocaleDateString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+
+            html += `
+                <tr>
+                    <td>
+                        <strong style="color: var(--gold-light); display: block;">${pk.admin_name || 'Admin'}</strong>
+                        <span class="passkey-badge-active">
+                            ${getIcon('check')} Biométrique
+                        </span>
+                    </td>
+                    <td style="color: var(--text-secondary);">${created}</td>
+                    <td style="color: var(--text-secondary);">${lastUsed}</td>
+                    <td>
+                        <code style="background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; color: var(--gold-primary); font-family: monospace;">${pk.recovery_code || '---'}</code>
+                    </td>
+                    <td style="text-align: center;">
+                        <button type="button" class="btn-export-secondary" style="padding: 4px 10px; font-size: 0.78rem; border-color: rgba(231,76,60,0.5); color: #e74c3c;" onclick="handleRevokePasskey('${pk.credential_id}', '${(pk.admin_name || '').replace(/'/g, "\\'")}')">
+                            ${getIcon('alert-circle')}
+                            <span>${t('passkey_revoke')}</span>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+    } catch (err) {
+        console.error("Error rendering passkeys list:", err);
+        container.innerHTML = `<div style="text-align: center; padding: 18px; color: #e74c3c;">Erreur lors du chargement des Passkeys.</div>`;
+    }
+}
+
+async function handleRevokePasskey(credentialId, adminName) {
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const confirmMsg = `${t('passkey_confirm_revoke')} (${adminName})`;
+    if (!window.confirm(confirmMsg)) return;
+
+    try {
+        const success = await KopiPasskey.revokePasskey(credentialId);
+        if (success) {
+            SoundFX.actionSuccess();
+            showToast(t('passkey_revoked_success'), 'check');
+            renderPasskeysList();
+        } else {
+            showToast("Impossible de révoquer ce Passkey", 'alert-circle');
+        }
+    } catch (e) {
+        showToast(e.message, 'alert-circle');
+    }
+}
+
 
 
