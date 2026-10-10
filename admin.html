@@ -109,16 +109,6 @@
 
                     <div id="live-clock" class="admin-clock-badge">--:--:--</div>
                     
-                    <button id="supabase-status-btn" class="admin-nav-btn" onclick="openSupabaseModal()" title="État de la base de données Supabase">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <ellipse cx="12" cy="5" rx="9" ry="3"/>
-                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-                        </svg>
-                        <span id="supabase-status-text">Base DB</span>
-                        <span id="supabase-status-dot" class="live-status-dot" style="background: var(--warning); width: 8px; height: 8px; margin-left: 4px;"></span>
-                    </button>
-                    
                     <button id="fullscreen-toggle" class="admin-nav-btn" onclick="toggleFullscreen()" title="Basculer en plein écran">
                         <svg id="fullscreen-icon" class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
@@ -469,77 +459,6 @@
 
             <!-- Archived Orders Scroll List -->
             <div id="archives-list-container" class="report-orders-scroll"></div>
-        </div>
-    </div>
-
-    <!-- ================================================================
-         SUPABASE DATABASE CONFIGURATION & STATUS MODAL
-         ================================================================ -->
-    <div id="supabase-modal-overlay" class="modal-overlay" onclick="closeSupabaseModal(event)">
-        <div class="kopi-report-modal" onclick="event.stopPropagation()" style="max-width: 580px;">
-            <div class="report-modal-header">
-                <div class="report-header-left">
-                    <span class="report-header-icon">
-                        <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <ellipse cx="12" cy="5" rx="9" ry="3"/>
-                            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
-                            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <h2 id="supabase-modal-title" class="report-title">Base de Données Supabase PostgreSQL</h2>
-                        <p id="supabase-modal-subtitle" class="report-subtitle">Synchronisation Cloud en temps réel et persistance sécurisée</p>
-                    </div>
-                </div>
-                <button type="button" class="report-modal-close" onclick="closeSupabaseModal()" title="Fermer">
-                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
-            </div>
-
-            <div style="padding: 20px 24px;">
-                <div id="supabase-status-banner" style="display: flex; align-items: center; gap: 12px; padding: 14px 18px; border-radius: 12px; background: rgba(229,166,56,0.12); border: 1px solid rgba(229,166,56,0.3); margin-bottom: 20px;">
-                    <span id="supabase-status-indicator-dot" style="width: 12px; height: 12px; border-radius: 50%; background: var(--warning); display: inline-block; flex-shrink: 0;"></span>
-                    <div style="flex: 1;">
-                        <strong id="supabase-banner-title" style="display: block; font-size: 0.95rem; color: var(--gold-light);">Configuration Supabase</strong>
-                        <span id="supabase-banner-desc" style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; display: block;">Connectez votre projet Supabase pour une persistance et synchronisation PostgreSQL instantanée.</span>
-                    </div>
-                </div>
-
-                <div style="margin-bottom: 16px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
-                        Supabase Project URL
-                    </label>
-                    <input type="url" id="supabase-url-input" class="admin-search-input" style="width: 100%; border-radius: 10px; padding: 10px 14px; background: var(--bg-surface); border: 1px solid rgba(229,166,56,0.3); color: var(--text-primary);" placeholder="https://votre-projet.supabase.co">
-                </div>
-
-                <div style="margin-bottom: 20px;">
-                    <label style="display: block; font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 6px;">
-                        Supabase Anon Public API Key
-                    </label>
-                    <input type="password" id="supabase-key-input" class="admin-search-input" style="width: 100%; border-radius: 10px; padding: 10px 14px; background: var(--bg-surface); border: 1px solid rgba(229,166,56,0.3); color: var(--text-primary);" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...">
-                </div>
-
-                <div style="display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
-                    <button type="button" class="btn-export-secondary" onclick="testSupabaseConnection()">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <polyline points="23 4 23 10 17 10"/>
-                            <polyline points="1 20 1 14 7 14"/>
-                            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
-                        </svg>
-                        <span>Tester la Connexion</span>
-                    </button>
-                    <button type="button" class="btn-export-primary" onclick="saveSupabaseSettings()">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                            <polyline points="17 21 17 13 7 13 7 21"/>
-                            <polyline points="7 3 7 8 15 8"/>
-                        </svg>
-                        <span>Enregistrer</span>
-                    </button>
-                </div>
-            </div>
         </div>
     </div>
 
