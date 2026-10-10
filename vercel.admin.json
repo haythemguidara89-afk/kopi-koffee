@@ -1,9 +1,10 @@
 {
   "cleanUrls": true,
-  "rewrites": [
-    { "source": "/", "destination": "/admin.html" },
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/cuisine", "destination": "/admin.html" },
-    { "source": "/kds", "destination": "/admin.html" }
+  "routes": [
+    { "src": "/", "dest": "/admin.html" },
+    { "src": "/admin", "dest": "/admin.html" },
+    { "src": "/cuisine", "dest": "/admin.html" },
+    { "src": "/kds", "dest": "/admin.html" },
+    { "handle": "filesystem" }
   ]
 }
