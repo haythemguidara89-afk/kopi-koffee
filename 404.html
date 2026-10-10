@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>404 - Page Non Trouvée • Kopi Koffee</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="icon" type="image/png" href="logo-gold.png">
+    <style>
+        .error-page-container {
+            min-height: 80vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 30px 20px;
+        }
+        .error-code {
+            font-size: clamp(4.5rem, 15vw, 8rem);
+            font-weight: 900;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--gold-light), var(--gold-primary), var(--gold-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 12px;
+            letter-spacing: -2px;
+        }
+        .error-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+        .error-desc {
+            font-size: 0.95rem;
+            color: var(--text-secondary);
+            max-width: 420px;
+            margin: 0 auto 26px auto;
+            line-height: 1.6;
+        }
+        .error-actions {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-wrapper">
+        <header class="site-header" style="margin-bottom: 20px;">
+            <div class="brand-container">
+                <a href="/">
+                    <img src="logo-gold.png" alt="Kopi Koffee" class="brand-logo-img">
+                </a>
+                <p class="brand-tagline">Food & Drink • Café Lounge</p>
+            </div>
+        </header>
+
+        <main class="error-page-container">
+            <div class="error-code">404</div>
+            <h1 class="error-title">Page Introuvable • الصفحة غير موجودة</h1>
+            <p class="error-desc">
+                La page demandée n'existe pas ou a été déplacée.<br>
+                الصفحة المطلوبة غير موجودة أو تم نقلها.
+            </p>
+            <div class="error-actions">
+                <a href="/" class="btn-checkout" style="display: inline-flex; align-items: center; gap: 8px; text-decoration: none; padding: 14px 28px; width: auto; font-size: 0.95rem;">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span>Retour au Menu • العودة للقائمة</span>
+                </a>
+            </div>
+        </main>
+    </div>
+</body>
+</html>
