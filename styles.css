@@ -267,7 +267,7 @@ body::before {
 }
 
 /* ==========================================================================
-   PIN CODE SECURITY MODAL (Staff Access 10699)
+   PASSKEY & STAFF ACCESS MODALS
    ========================================================================== */
 .pin-modal-overlay {
     position: fixed;

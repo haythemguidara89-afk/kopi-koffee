@@ -1539,8 +1539,8 @@ async function handlePasskeyLogin() {
         if (err.message === 'NO_PASSKEYS_REGISTERED') {
             const isAr = (typeof KOPI_I18N !== 'undefined') && KOPI_I18N.currentLang === 'ar';
             const msg = isAr ?
-                'لا توجد مفاتيح مرور مسجلة بعد. استخدم الرمز السري (10699) أو اطلب رابط تفعيل.' :
-                'Aucun Passkey enregistré. Utilisez le code PIN (10699) ou demandez un lien d\'activation.';
+                'لا توجد مفاتيح مرور مسجلة بعد. استخدم رابط التفعيل لتسجيل جهازك.' :
+                'Aucun Passkey enregistré. Utilisez votre lien d\'activation pour enregistrer cet appareil.';
             showToast(msg, 'alert-circle');
             return;
         }
