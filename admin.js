@@ -1,12 +1,9 @@
 // Kopi Koffee - Dedicated Admin & Kitchen Display System Logic (admin.js)
-// Password: 10699 • Real-Time Order Processing & Modern KDS Dashboard (Vector Icons)
-
-const ADMIN_PASSWORD = "10699";
+// WebAuthn Biometric Passkeys (Face ID, Touch ID) • Real-Time Order Processing & Modern KDS Dashboard
 
 let adminFilter = 'all';
 let searchQuery = '';
 let soundEnabled = localStorage.getItem('kopiSoundEnabled') !== 'false';
-let enteredPin = "";
 let lastKnownOrderCount = 0;
 let archivesSearchQuery = "";
 let currentInviteToken = null;
@@ -95,7 +92,6 @@ document.addEventListener('DOMContentLoaded', () => {
     checkInviteTokenParam();
     startClock();
     setupSoundToggle();
-    setupKeyboardListeners();
 
     // Listen to global language change (FR / AR)
     window.addEventListener('kopiLangChanged', () => {
@@ -160,15 +156,6 @@ function updateAdminStaticTranslations() {
 
     const authDesc = document.getElementById('admin-auth-desc');
     if (authDesc) authDesc.innerText = t('admin_auth_subtitle');
-
-    const keyClear = document.querySelector('.key-clear span');
-    if (keyClear) keyClear.innerText = t('admin_pin_clear');
-
-    const keyEnter = document.querySelector('.key-enter span');
-    if (keyEnter) keyEnter.innerText = t('admin_pin_submit');
-
-    const keyHint = document.querySelector('.pin-keyboard-hint span');
-    if (keyHint) keyHint.innerText = t('admin_keyboard_hint');
 
     const backClient = document.querySelector('#admin-auth-view .admin-nav-btn span');
     if (backClient) backClient.innerText = t('admin_back_client');
@@ -284,9 +271,6 @@ function updateAdminStaticTranslations() {
     const passkeyBtn = document.getElementById('label-passkey-btn');
     if (passkeyBtn) passkeyBtn.innerText = t('passkey_login_btn');
 
-    const passkeyOr = document.getElementById('label-passkey-or');
-    if (passkeyOr) passkeyOr.innerText = t('passkey_or_pin');
-
     const recToggle = document.getElementById('label-recovery-toggle');
     if (recToggle) recToggle.innerText = t('passkey_recovery_toggle');
 
@@ -365,8 +349,6 @@ function showAuthView() {
     const kdsView = document.getElementById('admin-kds-view');
     if (authView) authView.classList.remove('hidden');
     if (kdsView) kdsView.classList.add('hidden');
-    enteredPin = "";
-    updatePinDots();
 }
 
 function showKDSView() {
@@ -382,80 +364,6 @@ function logoutAdmin() {
     const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
     showToast(t('admin_lock'), "lock");
     showAuthView();
-}
-
-// ==========================================================================
-// PIN & PASSWORD HANDLING
-// ==========================================================================
-function appendPinDigit(digit) {
-    if (enteredPin.length < 5) {
-        enteredPin += digit;
-        updatePinDots();
-        if (enteredPin.length === 5) {
-            setTimeout(submitCurrentPin, 120);
-        }
-    }
-}
-
-function clearPin() {
-    enteredPin = "";
-    updatePinDots();
-    const errorEl = document.getElementById('pin-error-msg');
-    if (errorEl) errorEl.innerText = "";
-}
-
-function updatePinDots() {
-    for (let i = 0; i < 5; i++) {
-        const dot = document.getElementById(`dot-${i}`);
-        if (dot) {
-            if (i < enteredPin.length) {
-                dot.classList.add('filled');
-            } else {
-                dot.classList.remove('filled');
-            }
-        }
-    }
-}
-
-function submitCurrentPin() {
-    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
-    if (enteredPin === ADMIN_PASSWORD) {
-        sessionStorage.setItem('kopiStaffAuth', 'true');
-        SoundFX.actionSuccess();
-        showToast(t('admin_auth_success'), "chef");
-        showKDSView();
-    } else {
-        handleAuthError(t('admin_pin_error'));
-    }
-}
-
-function handleAuthError(msg) {
-    SoundFX.accessDenied();
-    const errorEl = document.getElementById('pin-error-msg');
-    if (errorEl) errorEl.innerText = msg;
-    
-    const card = document.querySelector('#admin-auth-view .pin-modal');
-    if (card) {
-        card.classList.add('shake');
-        setTimeout(() => card.classList.remove('shake'), 450);
-    }
-    enteredPin = "";
-    updatePinDots();
-}
-
-function setupKeyboardListeners() {
-    window.addEventListener('keydown', (e) => {
-        const authView = document.getElementById('admin-auth-view');
-        if (authView && !authView.classList.contains('hidden')) {
-            if (e.key >= '0' && e.key <= '9') {
-                appendPinDigit(e.key);
-            } else if (e.key === 'Backspace') {
-                clearPin();
-            } else if (e.key === 'Enter') {
-                submitCurrentPin();
-            }
-        }
-    });
 }
 
 // ==========================================================================

@@ -43,10 +43,10 @@
                 <h1 id="admin-auth-title" class="pin-title" style="font-size: 1.55rem; margin-bottom: 4px;">Espace Administration</h1>
                 <p id="admin-auth-desc" class="pin-desc" style="margin-bottom: 18px;">Système Cuisine & Comptoir KDS • Kopi Koffee</p>
 
-                <!-- Passkey Biometric Login Option -->
-                <div id="passkey-login-section" class="passkey-login-container">
-                    <button type="button" id="btn-passkey-login" class="btn-passkey-login" onclick="handlePasskeyLogin()">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <!-- Passkey Biometric Login Primary Action -->
+                <div id="passkey-login-section" class="passkey-login-container" style="margin-top: 18px; margin-bottom: 20px;">
+                    <button type="button" id="btn-passkey-login" class="btn-passkey-login" onclick="handlePasskeyLogin()" style="padding: 16px 20px; font-size: 1.02rem;">
+                        <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path d="m15.5 8.5 3 3L22 8l-3-3-3.5 3.5Z"/>
                             <path d="m11 13 4.5-4.5"/>
                             <path d="M11 13c-1.5 1.5-3.5 2-5 1a5 5 0 1 1 7-7c1 1.5.5 3.5-1 5l-1 1Z"/>
@@ -54,55 +54,6 @@
                         </svg>
                         <span id="label-passkey-btn">Connexion Passkey (Face ID / Empreinte)</span>
                     </button>
-                    <div class="passkey-divider"><span id="label-passkey-or">OU AVEC LE CODE PIN</span></div>
-                </div>
-
-                <!-- PIN Dots Display -->
-                <div class="pin-dots-container" style="margin-bottom: 18px;">
-                    <div class="pin-dot" id="dot-0"></div>
-                    <div class="pin-dot" id="dot-1"></div>
-                    <div class="pin-dot" id="dot-2"></div>
-                    <div class="pin-dot" id="dot-3"></div>
-                    <div class="pin-dot" id="dot-4"></div>
-                </div>
-
-                <div id="pin-error-msg" class="pin-error-text"></div>
-
-                <!-- On-Screen Luxury Numeric Keypad -->
-                <div class="pin-keypad">
-                    <button type="button" class="pin-key" onclick="appendPinDigit('1')">1</button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('2')">2</button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('3')">3</button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('4')">4</button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('5')">5</button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('6')">6</button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('7')">7</button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('8')">8</button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('9')">9</button>
-                    <button type="button" class="pin-key key-clear" onclick="clearPin()">
-                        <span style="font-size: 0.82rem; font-weight: 700;">Effacer</span>
-                    </button>
-                    <button type="button" class="pin-key" onclick="appendPinDigit('0')">0</button>
-                    <button type="button" class="pin-key key-enter" onclick="submitCurrentPin()">
-                        <span style="font-size: 0.82rem; font-weight: 800;">Valider</span>
-                    </button>
-                </div>
-
-                <!-- Keyboard Hint -->
-                <div class="pin-keyboard-hint">
-                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <rect x="2" y="4" width="20" height="16" rx="2" ry="2"/>
-                        <line x1="6" y1="8" x2="6.01" y2="8"/>
-                        <line x1="10" y1="8" x2="10.01" y2="8"/>
-                        <line x1="14" y1="8" x2="14.01" y2="8"/>
-                        <line x1="18" y1="8" x2="18.01" y2="8"/>
-                        <line x1="6" y1="12" x2="6.01" y2="12"/>
-                        <line x1="10" y1="12" x2="10.01" y2="12"/>
-                        <line x1="14" y1="12" x2="14.01" y2="12"/>
-                        <line x1="18" y1="12" x2="18.01" y2="12"/>
-                        <line x1="8" y1="16" x2="16" y2="16"/>
-                    </svg>
-                    <span>Pavé tactile ou clavier physique activé (Code: 10699)</span>
                 </div>
 
                 <!-- Recovery Code Option -->
