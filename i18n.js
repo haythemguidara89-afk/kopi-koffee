@@ -202,7 +202,16 @@ const KOPI_I18N = {
             admin_search_archives: "Rechercher dans les archives (table, ID, article)...",
             admin_confirm_restore: "Voulez-vous restaurer cette commande vers l'écran de cuisine actif ?",
             admin_toast_restored: "Commande restaurée en cuisine !",
-            admin_toast_summary_copied: "Résumé copié dans le presse-papiers !"
+            admin_toast_summary_copied: "Résumé copié dans le presse-papiers !",
+            admin_link_archives: "Consulter les Archives",
+            admin_btn_close_service: "Clôturer & Archiver la Journée",
+            admin_confirm_close_service: "Voulez-vous clôturer le service du jour ? Toutes les commandes servies actives seront archivées dans la base de données.",
+            admin_service_closed_toast: "Service clôturé avec succès ! Commandes archivées.",
+            admin_report_archive_hint: "Pour consulter les commandes des jours précédents :",
+            admin_report_open_archives_link: "Accéder aux Archives",
+            admin_arch_filter_all: "Toutes les dates",
+            admin_arch_filter_today: "Aujourd'hui",
+            admin_arch_filter_past: "Jours précédents"
         },
 
         ar: {
@@ -456,7 +465,16 @@ const KOPI_I18N = {
             admin_search_archives: "بحث في الأرشيف (رقم الطاولة، رقم الطلب، المنتج)...",
             admin_confirm_restore: "هل تريد استرجاع هذا الطلب إلى شاشة المطبخ النشطة ؟",
             admin_toast_restored: "تمت استعادة الطلب إلى شاشة المطبخ !",
-            admin_toast_summary_copied: "تم نسخ ملخص اليوم بنجاح !"
+            admin_toast_summary_copied: "تم نسخ ملخص اليوم بنجاح !",
+            admin_link_archives: "عرض سجل الأرشيف",
+            admin_btn_close_service: "إغلاق الوردية والأرشفة",
+            admin_confirm_close_service: "هل تريد إغلاق وردية اليوم ؟ سيتم أرشفة جميع الطلبات المقدمة النشطة في قاعدة البيانات.",
+            admin_service_closed_toast: "تم إغلاق وردية اليوم وأرشفة الطلبات بنجاح !",
+            admin_report_archive_hint: "للاطلاع على طلبات وتفاصيل الأيام السابقة :",
+            admin_report_open_archives_link: "فتح سجل الأرشيف",
+            admin_arch_filter_all: "جميع التواريخ",
+            admin_arch_filter_today: "اليوم",
+            admin_arch_filter_past: "الأيام السابقة"
         }
     },
 

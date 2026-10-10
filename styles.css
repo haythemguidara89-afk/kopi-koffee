@@ -3296,6 +3296,45 @@ body.rtl-mode h1, body.rtl-mode h2, body.rtl-mode h3, body.rtl-mode h4 {
     color: var(--gold-light);
 }
 
+.archive-filter-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(229, 166, 56, 0.2);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: var(--font-body);
+}
+
+.archive-filter-btn:hover {
+    background: rgba(229, 166, 56, 0.12);
+    border-color: rgba(229, 166, 56, 0.4);
+    color: var(--gold-light);
+}
+
+.archive-filter-btn.active {
+    background: rgba(229, 166, 56, 0.22);
+    border-color: var(--gold-primary);
+    color: var(--gold-light);
+    font-weight: 700;
+    box-shadow: 0 0 10px rgba(229, 166, 56, 0.2);
+}
+
+.report-archives-hint {
+    transition: all 0.2s ease;
+}
+
+.report-archives-hint:hover {
+    background: rgba(229, 166, 56, 0.09) !important;
+    border-color: rgba(229, 166, 56, 0.35) !important;
+}
+
 /* RTL Support for Reports */
 [dir="rtl"] .report-order-right {
     align-items: flex-start;

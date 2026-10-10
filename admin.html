@@ -118,14 +118,6 @@
                         <span id="supabase-status-text">Base DB</span>
                         <span id="supabase-status-dot" class="live-status-dot" style="background: var(--warning); width: 8px; height: 8px; margin-left: 4px;"></span>
                     </button>
-
-                    <button id="security-manage-btn" class="admin-nav-btn" onclick="openSecurityModal()" title="Sécurité & Gestion des Passkeys">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                            <polyline points="9 12 11 14 15 10"/>
-                        </svg>
-                        <span id="label-security-nav">Sécurité & Passkeys</span>
-                    </button>
                     
                     <button id="fullscreen-toggle" class="admin-nav-btn" onclick="toggleFullscreen()" title="Basculer en plein écran">
                         <svg id="fullscreen-icon" class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -373,14 +365,48 @@
                     </svg>
                     <span id="label-copy-summary">Copier le Résumé</span>
                 </button>
+                <button type="button" class="btn-export-secondary" onclick="openArchivedOrdersModal()" title="Consulter l'historique complet des commandes passées">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="21 8 21 21 3 21 3 8"/>
+                        <rect x="1" y="3" width="22" height="5"/>
+                        <line x1="10" y1="12" x2="14" y2="12"/>
+                    </svg>
+                    <span id="label-report-to-archives">Consulter les Archives</span>
+                </button>
+                <button type="button" class="btn-export-secondary" style="border-color: rgba(229,166,56,0.5); color: var(--gold-light);" onclick="closeAndArchiveDay()" title="Archiver toutes les commandes servies pour terminer le service du jour">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    <span id="label-btn-close-day">Clôturer & Archiver le Service</span>
+                </button>
             </div>
 
             <!-- Served Orders List Container -->
             <div class="report-section-header">
-                <h3 id="daily-served-title">Détail des Commandes Servies</h3>
+                <h3 id="daily-served-title">Détail des Commandes Servies Aujourd'hui</h3>
                 <span id="daily-served-count-badge" class="badge-pill">0</span>
             </div>
             <div id="daily-served-list-container" class="report-orders-scroll"></div>
+
+            <!-- Link hint to older archived orders -->
+            <div class="report-archives-hint" style="margin-top: 14px; padding: 12px 16px; background: rgba(229,166,56,0.06); border: 1px solid rgba(229,166,56,0.2); border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="font-size: 0.85rem; color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="21 8 21 21 3 21 3 8"/>
+                        <rect x="1" y="3" width="22" height="5"/>
+                        <line x1="10" y1="12" x2="14" y2="12"/>
+                    </svg>
+                    <span id="label-report-archive-hint">Pour consulter les commandes des jours précédents :</span>
+                </div>
+                <button type="button" class="btn-ticket-mini" onclick="openArchivedOrdersModal()" style="color: var(--gold-light); border-color: rgba(229,166,56,0.4);">
+                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="21 8 21 21 3 21 3 8"/>
+                        <rect x="1" y="3" width="22" height="5"/>
+                        <line x1="10" y1="12" x2="14" y2="12"/>
+                    </svg>
+                    <span id="label-report-open-archives-link">Accéder aux Archives</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -411,12 +437,24 @@
             </div>
 
             <!-- Search & Actions Bar inside Archives -->
-            <div class="report-actions-bar" style="justify-content: space-between;">
-                <div class="admin-search-wrapper" style="flex: 1; max-width: 380px;">
+            <div class="report-actions-bar" style="justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div class="admin-search-wrapper" style="flex: 1; min-width: 240px; max-width: 380px;">
                     <svg class="icon-svg admin-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
                     </svg>
                     <input type="text" id="archives-search-input" class="admin-search-input" placeholder="Rechercher table, ID, article..." oninput="handleArchivesSearch(this.value)">
+                </div>
+
+                <div class="archive-date-filters" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+                    <button type="button" class="archive-filter-btn active" data-archive-filter="all" onclick="setArchiveFilter('all')">
+                        <span id="label-arch-filter-all">Toutes les dates</span>
+                    </button>
+                    <button type="button" class="archive-filter-btn" data-archive-filter="today" onclick="setArchiveFilter('today')">
+                        <span id="label-arch-filter-today">Aujourd'hui</span>
+                    </button>
+                    <button type="button" class="archive-filter-btn" data-archive-filter="past" onclick="setArchiveFilter('past')">
+                        <span id="label-arch-filter-past">Jours précédents</span>
+                    </button>
                 </div>
 
                 <div style="display: flex; gap: 8px;">
@@ -587,101 +625,6 @@
                         </svg>
                         <span id="label-invite-enter-btn">Accéder à l'écran de cuisine</span>
                     </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ================================================================
-         SECURITY & PASSKEY MANAGEMENT MODAL
-         ================================================================ -->
-    <div id="security-modal-overlay" class="modal-overlay" onclick="closeSecurityModal(event)">
-        <div class="kopi-report-modal" onclick="event.stopPropagation()" style="max-width: 680px;">
-            <div class="report-modal-header">
-                <div class="report-header-left">
-                    <span class="report-header-icon">
-                        <svg class="icon-svg icon-svg-lg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-                            <polyline points="9 12 11 14 15 10"/>
-                        </svg>
-                    </span>
-                    <div>
-                        <h2 id="security-modal-title" class="report-title">Sécurité & Gestion des Passkeys</h2>
-                        <p id="security-modal-subtitle" class="report-subtitle">Génération de liens d'invitation à usage unique et contrôle des accès</p>
-                    </div>
-                </div>
-                <button type="button" class="report-modal-close" onclick="closeSecurityModal()" title="Fermer">
-                    <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
-            </div>
-
-            <div style="padding: 24px; max-height: calc(85vh - 100px); overflow-y: auto;">
-                <!-- 1. Generate Invite Section -->
-                <div style="background: rgba(229,166,56,0.06); border: 1px solid rgba(229,166,56,0.25); border-radius: 14px; padding: 18px; margin-bottom: 24px;">
-                    <h3 id="label-invite-sec-title" style="font-size: 1rem; color: var(--gold-light); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <line x1="19" y1="8" x2="19" y2="14"/>
-                            <line x1="22" y1="11" x2="16" y2="11"/>
-                        </svg>
-                        <span>Créer un lien d'invitation à usage unique</span>
-                    </h3>
-                    <p id="label-invite-sec-desc" style="font-size: 0.82rem; color: var(--text-secondary); margin-bottom: 14px;">
-                        Générez un lien direct permettant à un membre du personnel d'enregistrer son empreinte ou Face ID sur son appareil.
-                    </p>
-
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <input type="text" id="invite-admin-name-input" class="admin-search-input" style="flex: 1; min-width: 220px;" placeholder="Nom de l'administrateur (ex: Barista Yassine)">
-                        <button type="button" class="btn-export-primary" onclick="generateInviteLink()">
-                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-                                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-                            </svg>
-                            <span id="label-btn-generate-invite">Générer le lien</span>
-                        </button>
-                    </div>
-
-                    <!-- Generated Invite Box -->
-                    <div id="invite-link-result-box" style="display: none; margin-top: 14px;">
-                        <div class="passkey-invite-url-box">
-                            <span id="invite-link-display-url" style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1;"></span>
-                            <button type="button" class="btn-export-secondary" style="padding: 6px 12px; font-size: 0.8rem;" onclick="copyInviteUrl()">
-                                <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
-                                </svg>
-                                <span id="label-btn-copy-invite">Copier</span>
-                            </button>
-                        </div>
-                        <div style="font-size: 0.78rem; color: var(--gold-light); display: flex; align-items: center; gap: 6px;">
-                            <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
-                                <circle cx="12" cy="12" r="10"/>
-                                <line x1="12" y1="8" x2="12" y2="12"/>
-                                <line x1="12" y1="16" x2="12.01" y2="16"/>
-                            </svg>
-                            <span id="label-invite-notice">Lien valide 48 heures. Il sera invalidé immédiatement après sa première utilisation.</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 2. Active Passkeys List -->
-                <div>
-                    <h3 id="label-passkeys-list-title" style="font-size: 1rem; color: var(--gold-light); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
-                        <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="m15.5 8.5 3 3L22 8l-3-3-3.5 3.5Z"/>
-                            <path d="m11 13 4.5-4.5"/>
-                            <path d="M11 13c-1.5 1.5-3.5 2-5 1a5 5 0 1 1 7-7c1 1.5.5 3.5-1 5l-1 1Z"/>
-                            <path d="M5 18l3.5-3.5"/>
-                        </svg>
-                        <span>Passkeys Enregistrés & Actifs</span>
-                    </h3>
-
-                    <div id="passkeys-list-container" class="passkey-table-wrapper">
-                        <!-- Populated dynamically -->
-                    </div>
                 </div>
             </div>
         </div>

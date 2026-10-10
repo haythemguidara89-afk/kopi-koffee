@@ -267,7 +267,28 @@ function updateAdminStaticTranslations() {
     const labelExportArch = document.getElementById('label-export-archives-csv');
     if (labelExportArch) labelExportArch.innerText = t('admin_btn_extract_csv');
 
-    // Passkey Biometrics & Security translations
+    const labelReportToArch = document.getElementById('label-report-to-archives');
+    if (labelReportToArch) labelReportToArch.innerText = t('admin_link_archives');
+
+    const labelBtnCloseDay = document.getElementById('label-btn-close-day');
+    if (labelBtnCloseDay) labelBtnCloseDay.innerText = t('admin_btn_close_service');
+
+    const labelReportArchHint = document.getElementById('label-report-archive-hint');
+    if (labelReportArchHint) labelReportArchHint.innerText = t('admin_report_archive_hint');
+
+    const labelReportOpenArch = document.getElementById('label-report-open-archives-link');
+    if (labelReportOpenArch) labelReportOpenArch.innerText = t('admin_report_open_archives_link');
+
+    const labelArchFilterAll = document.getElementById('label-arch-filter-all');
+    if (labelArchFilterAll) labelArchFilterAll.innerText = t('admin_arch_filter_all');
+
+    const labelArchFilterToday = document.getElementById('label-arch-filter-today');
+    if (labelArchFilterToday) labelArchFilterToday.innerText = t('admin_arch_filter_today');
+
+    const labelArchFilterPast = document.getElementById('label-arch-filter-past');
+    if (labelArchFilterPast) labelArchFilterPast.innerText = t('admin_arch_filter_past');
+
+    // Passkey Biometrics translations (Login & Individual Setup)
     const passkeyBtn = document.getElementById('label-passkey-btn');
     if (passkeyBtn) passkeyBtn.innerText = t('passkey_login_btn');
 
@@ -279,9 +300,6 @@ function updateAdminStaticTranslations() {
 
     const recSubmit = document.getElementById('label-recovery-submit');
     if (recSubmit) recSubmit.innerText = t('passkey_recovery_btn');
-
-    const secNav = document.getElementById('label-security-nav');
-    if (secNav) secNav.innerText = t('passkey_manage_nav_btn');
 
     const invModalTitle = document.getElementById('invite-modal-title');
     if (invModalTitle) invModalTitle.innerText = t('passkey_modal_invite_title');
@@ -306,33 +324,6 @@ function updateAdminStaticTranslations() {
 
     const invEnterBtn = document.getElementById('label-invite-enter-btn');
     if (invEnterBtn) invEnterBtn.innerText = t('passkey_enter_kds');
-
-    const secModalTitle = document.getElementById('security-modal-title');
-    if (secModalTitle) secModalTitle.innerText = t('passkey_manage_modal_title');
-
-    const secModalSub = document.getElementById('security-modal-subtitle');
-    if (secModalSub) secModalSub.innerText = t('passkey_manage_modal_desc');
-
-    const invSecTitle = document.querySelector('#label-invite-sec-title span');
-    if (invSecTitle) invSecTitle.innerText = t('passkey_create_invite_title');
-
-    const invSecDesc = document.getElementById('label-invite-sec-desc');
-    if (invSecDesc) invSecDesc.innerText = t('passkey_create_invite_desc');
-
-    const invNameInput = document.getElementById('invite-admin-name-input');
-    if (invNameInput) invNameInput.placeholder = t('passkey_staff_name_placeholder');
-
-    const btnGenInvite = document.getElementById('label-btn-generate-invite');
-    if (btnGenInvite) btnGenInvite.innerText = t('passkey_btn_generate');
-
-    const btnCopyInvite = document.getElementById('label-btn-copy-invite');
-    if (btnCopyInvite) btnCopyInvite.innerText = t('passkey_copy_link_short');
-
-    const invNotice = document.getElementById('label-invite-notice');
-    if (invNotice) invNotice.innerText = t('passkey_invite_notice');
-
-    const passkeysListTitle = document.querySelector('#label-passkeys-list-title span');
-    if (passkeysListTitle) passkeysListTitle.innerText = t('passkey_active_list_title');
 }
 
 function checkAuthState() {
@@ -567,14 +558,16 @@ function renderAdminKDS() {
     const preparingOrders = orders.filter(o => o.status === 'preparing');
     const completedOrders = orders.filter(o => o.status === 'completed');
 
-    const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const totalItems = orders.reduce((sum, o) => sum + (o.items || []).reduce((isum, i) => isum + (i.quantity || 1), 0), 0);
+    // Revenue and items prepared TODAY (strictly aligned with Daily Closing Report)
+    const todayServed = getDailyServedOrders();
+    const todayRevenue = todayServed.reduce((sum, o) => sum + (o.total || 0), 0);
+    const todayItems = todayServed.reduce((sum, o) => sum + (o.items || []).reduce((isum, i) => isum + (i.quantity || 1), 0), 0);
 
     // Update Metrics
     if (metricPending) metricPending.innerText = pendingOrders.length;
     if (metricPreparing) metricPreparing.innerText = preparingOrders.length;
-    if (metricRevenue) metricRevenue.innerText = `${totalRevenue.toFixed(1)} ${t('currency')}`;
-    if (metricItems) metricItems.innerText = totalItems;
+    if (metricRevenue) metricRevenue.innerText = `${todayRevenue.toFixed(1)} ${t('currency')}`;
+    if (metricItems) metricItems.innerText = todayItems;
 
     // Update Filter Badges
     if (countAll) countAll.innerText = orders.length;
@@ -918,6 +911,38 @@ function printReceipt(orderId) {
 // ==========================================================================
 // DAILY SUMMARY & SERVED ORDERS REPORT (KDS EXTENSION)
 // ==========================================================================
+function isSameCalendarDay(d1, d2) {
+    if (!d1 || !d2) return false;
+    return d1.getFullYear() === d2.getFullYear() &&
+           d1.getMonth() === d2.getMonth() &&
+           d1.getDate() === d2.getDate();
+}
+
+function isOrderFromToday(order) {
+    if (!order) return false;
+    const now = new Date();
+
+    // 1. Primary order timestamp (when order was placed)
+    const primary = order.createdAt || order.timestamp;
+    if (primary) {
+        const dPrimary = new Date(primary);
+        if (!isNaN(dPrimary.getTime()) && isSameCalendarDay(dPrimary, now)) {
+            return true;
+        }
+    }
+
+    // 2. Completion or archive timestamp (when order was served/archived)
+    const served = order.completedAt || order.archivedAt;
+    if (served) {
+        const dServed = new Date(served);
+        if (!isNaN(dServed.getTime()) && isSameCalendarDay(dServed, now)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 function getDailyServedOrders() {
     const activeOrders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
     const archivedOrders = (typeof KopiSync !== 'undefined') ? KopiSync.getArchivedOrders() : JSON.parse(localStorage.getItem('kopiArchivedOrders') || '[]');
@@ -934,8 +959,8 @@ function getDailyServedOrders() {
         }
     }
     
-    // Return all orders that have been served / completed
-    return uniqueOrders.filter(o => o.status === 'completed');
+    // Strictly return orders that were completed and served TODAY
+    return uniqueOrders.filter(o => o.status === 'completed' && isOrderFromToday(o));
 }
 
 function openDailySummaryModal() {
@@ -982,6 +1007,10 @@ function renderDailySummary() {
             <div style="text-align: center; padding: 45px 20px; color: var(--text-muted); background: linear-gradient(145deg, rgba(17, 26, 40, 0.9), rgba(12, 18, 29, 0.95)); border-radius: var(--radius-md); border: 1px dashed var(--gold-border);">
                 <div style="margin-bottom: 12px; color: var(--gold-light);">${getIcon('tray', 'icon-svg-xl')}</div>
                 <h3 style="color: var(--gold-light); font-size: 1.15rem; margin-bottom: 6px;">${t('admin_no_served_orders')}</h3>
+                <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 16px;">${t('admin_see_older_in_archives')}</p>
+                <button type="button" class="btn-ticket-mini" onclick="openArchivedOrdersModal()" style="color: var(--gold-light); border-color: rgba(229,166,56,0.4); padding: 8px 16px;">
+                    ${getIcon('archive')} <span>${t('admin_link_archives')}</span>
+                </button>
             </div>
         `;
         return;
@@ -1216,9 +1245,51 @@ Date: ${dateStr}
     }
 }
 
+async function closeAndArchiveDay() {
+    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
+    const isAr = (typeof KOPI_I18N !== 'undefined' && KOPI_I18N.currentLang === 'ar');
+    const activeOrders = (typeof KopiSync !== 'undefined') ? KopiSync.getOrders() : JSON.parse(localStorage.getItem('kopiOrders') || '[]');
+    const completedActive = activeOrders.filter(o => o.status === 'completed');
+
+    if (completedActive.length === 0) {
+        showToast(isAr ? "Toutes les commandes servies sont déjà archivées !" : "Toutes les commandes servies sont déjà archivées !", "check");
+        return;
+    }
+
+    const confirmMsg = t('admin_confirm_close_service');
+    if (!confirm(confirmMsg)) return;
+
+    for (const order of completedActive) {
+        if (typeof KopiSync !== 'undefined') {
+            await KopiSync.archiveOrder(order.id);
+        } else {
+            deleteOrder(order.id);
+        }
+    }
+
+    SoundFX.actionSuccess();
+    renderAdminKDS();
+    renderDailySummary();
+    showToast(t('admin_service_closed_toast'), "check");
+}
+
 // ==========================================================================
 // ARCHIVED ORDERS MANAGEMENT (WITH TIMESTAMPS & RESTORATION)
 // ==========================================================================
+let archiveDateFilter = 'all'; // 'all', 'today', 'past'
+
+function setArchiveFilter(filter) {
+    archiveDateFilter = filter;
+    document.querySelectorAll('.archive-filter-btn').forEach(btn => {
+        if (btn.dataset.archiveFilter === filter) {
+            btn.classList.add('active');
+        } else {
+            btn.classList.remove('active');
+        }
+    });
+    renderArchivedOrders();
+}
+
 function openArchivedOrdersModal() {
     const overlay = document.getElementById('archived-orders-modal-overlay');
     if (overlay) {
@@ -1250,23 +1321,41 @@ function renderArchivedOrders() {
     const countArchived = document.getElementById('count-archived');
     if (countArchived) countArchived.innerText = archived.length;
 
+    // Filter by date segment (All / Today / Past Days)
+    if (archiveDateFilter === 'today') {
+        archived = archived.filter(o => isOrderFromToday(o));
+    } else if (archiveDateFilter === 'past') {
+        archived = archived.filter(o => !isOrderFromToday(o));
+    }
+
+    // Filter by search query (table, id, item name, or date)
     if (archivesSearchQuery.length > 0) {
         archived = archived.filter(o => {
             const tableMatch = String(o.table || '').toLowerCase().includes(archivesSearchQuery);
             const idMatch = String(o.id || '').toLowerCase().includes(archivesSearchQuery);
+            const createdStr = (o.createdAt || o.timestamp || '').toString().toLowerCase();
             const itemsMatch = (o.items || []).some(item => {
                 const name = (typeof KOPI_I18N !== 'undefined') ? KOPI_I18N.getItemName(item).toLowerCase() : (item.name || '').toLowerCase();
                 return name.includes(archivesSearchQuery);
             });
-            return tableMatch || idMatch || itemsMatch;
+            return tableMatch || idMatch || itemsMatch || createdStr.includes(archivesSearchQuery);
         });
     }
 
     if (archived.length === 0) {
+        let emptyTitle = t('admin_no_archives');
+        if (archiveDateFilter === 'today') {
+            emptyTitle = isAr ? "لا توجد طلبات مؤرشفة اليوم" : "Aucune commande archivée aujourd'hui";
+        } else if (archiveDateFilter === 'past') {
+            emptyTitle = isAr ? "لا توجد طلبات مؤرشفة من الأيام السابقة" : "Aucune commande archivée des jours précédents";
+        } else if (archivesSearchQuery.length > 0) {
+            emptyTitle = isAr ? "لا توجد نتائج مطابقة في الأرشيف" : "Aucun résultat trouvé dans les archives";
+        }
+
         container.innerHTML = `
             <div style="text-align: center; padding: 45px 20px; color: var(--text-muted); background: linear-gradient(145deg, rgba(17, 26, 40, 0.9), rgba(12, 18, 29, 0.95)); border-radius: var(--radius-md); border: 1px dashed var(--gold-border);">
                 <div style="margin-bottom: 12px; color: var(--gold-light);">${getIcon('archive', 'icon-svg-xl')}</div>
-                <h3 style="color: var(--gold-light); font-size: 1.15rem; margin-bottom: 6px;">${t('admin_no_archives')}</h3>
+                <h3 style="color: var(--gold-light); font-size: 1.15rem; margin-bottom: 6px;">${emptyTitle}</h3>
             </div>
         `;
         return;
@@ -1670,147 +1759,6 @@ function closeInviteModal() {
     currentInviteAdminName = null;
 }
 
-// --------------------------------------------------------------------------
-// SECURITY & PASSKEY MANAGEMENT MODAL
-// --------------------------------------------------------------------------
-function openSecurityModal() {
-    const modal = document.getElementById('security-modal-overlay');
-    if (!modal) return;
-
-    const resultBox = document.getElementById('invite-link-result-box');
-    if (resultBox) resultBox.style.display = 'none';
-
-    const input = document.getElementById('invite-admin-name-input');
-    if (input) input.value = '';
-
-    renderPasskeysList();
-    modal.classList.add('open');
-}
-
-function closeSecurityModal(e) {
-    if (e && e.target && e.target !== e.currentTarget && !e.target.classList.contains('report-modal-close')) return;
-    const modal = document.getElementById('security-modal-overlay');
-    if (modal) modal.classList.remove('open');
-}
-
-async function generateInviteLink() {
-    const input = document.getElementById('invite-admin-name-input');
-    const name = (input ? input.value : '').trim() || 'Staff Barista';
-    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
-
-    try {
-        const invite = await KopiPasskey.createOneTimeInvite(name);
-        lastGeneratedInviteUrl = invite.inviteUrl;
-
-        const resultBox = document.getElementById('invite-link-result-box');
-        const urlDisplay = document.getElementById('invite-link-display-url');
-
-        if (urlDisplay) urlDisplay.innerText = invite.inviteUrl;
-        if (resultBox) resultBox.style.display = 'block';
-
-        showToast(t('passkey_link_copied'), 'check');
-    } catch (err) {
-        showToast(err.message || "Erreur lors de la création de l'invitation", 'alert-circle');
-    }
-}
-
-async function copyInviteUrl() {
-    if (!lastGeneratedInviteUrl) return;
-    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
-    try {
-        await navigator.clipboard.writeText(lastGeneratedInviteUrl);
-        showToast(t('passkey_link_copied'), 'check');
-    } catch (e) {
-        window.prompt("Copiez ce lien d'activation :", lastGeneratedInviteUrl);
-    }
-}
-
-async function renderPasskeysList() {
-    const container = document.getElementById('passkeys-list-container');
-    if (!container) return;
-    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
-
-    container.innerHTML = `<div style="text-align: center; padding: 18px; color: var(--text-muted);">${getIcon('refresh')} Chargement...</div>`;
-
-    try {
-        const passkeys = await KopiPasskey.listPasskeys();
-        if (!passkeys || passkeys.length === 0) {
-            container.innerHTML = `
-                <div style="text-align: center; padding: 24px; color: var(--text-muted); background: rgba(0,0,0,0.25); border-radius: 10px;">
-                    <div style="margin-bottom: 8px;">${getIcon('key')}</div>
-                    <div>${t('passkey_no_passkeys')}</div>
-                </div>
-            `;
-            return;
-        }
-
-        let html = `
-            <table class="passkey-table">
-                <thead>
-                    <tr>
-                        <th>${t('passkey_col_admin')}</th>
-                        <th>${t('passkey_col_created')}</th>
-                        <th>${t('passkey_col_last_used')}</th>
-                        <th>${t('passkey_col_recovery')}</th>
-                        <th style="text-align: center;">${t('passkey_col_actions')}</th>
-                    </tr>
-                </thead>
-                <tbody>
-        `;
-
-        passkeys.forEach(pk => {
-            const created = new Date(pk.created_at).toLocaleDateString([], { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            const lastUsed = pk.last_used_at ? new Date(pk.last_used_at).toLocaleDateString([], { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
-
-            html += `
-                <tr>
-                    <td>
-                        <strong style="color: var(--gold-light); display: block;">${pk.admin_name || 'Admin'}</strong>
-                        <span class="passkey-badge-active">
-                            ${getIcon('check')} Biométrique
-                        </span>
-                    </td>
-                    <td style="color: var(--text-secondary);">${created}</td>
-                    <td style="color: var(--text-secondary);">${lastUsed}</td>
-                    <td>
-                        <code style="background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 4px; color: var(--gold-primary); font-family: monospace;">${pk.recovery_code || '---'}</code>
-                    </td>
-                    <td style="text-align: center;">
-                        <button type="button" class="btn-export-secondary" style="padding: 4px 10px; font-size: 0.78rem; border-color: rgba(231,76,60,0.5); color: #e74c3c;" onclick="handleRevokePasskey('${pk.credential_id}', '${(pk.admin_name || '').replace(/'/g, "\\'")}')">
-                            ${getIcon('alert-circle')}
-                            <span>${t('passkey_revoke')}</span>
-                        </button>
-                    </td>
-                </tr>
-            `;
-        });
-
-        html += `</tbody></table>`;
-        container.innerHTML = html;
-    } catch (err) {
-        console.error("Error rendering passkeys list:", err);
-        container.innerHTML = `<div style="text-align: center; padding: 18px; color: #e74c3c;">Erreur lors du chargement des Passkeys.</div>`;
-    }
-}
-
-async function handleRevokePasskey(credentialId, adminName) {
-    const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
-    const confirmMsg = `${t('passkey_confirm_revoke')} (${adminName})`;
-    if (!window.confirm(confirmMsg)) return;
-
-    try {
-        const success = await KopiPasskey.revokePasskey(credentialId);
-        if (success) {
-            SoundFX.actionSuccess();
-            showToast(t('passkey_revoked_success'), 'check');
-            renderPasskeysList();
-        } else {
-            showToast("Impossible de révoquer ce Passkey", 'alert-circle');
-        }
-    } catch (e) {
-        showToast(e.message, 'alert-circle');
-    }
-}
 
 
 
