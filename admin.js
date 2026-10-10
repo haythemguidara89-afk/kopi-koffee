@@ -362,7 +362,7 @@ function showKDSView() {
 function logoutAdmin() {
     sessionStorage.removeItem('kopiStaffAuth');
     const t = (k) => (typeof KOPI_I18N !== 'undefined' ? KOPI_I18N.t(k) : k);
-    showToast(t('admin_lock'), "lock");
+    showToast(t('admin_toast_logged_out'), "log-out");
     showAuthView();
 }
 
