@@ -1,8 +1,10 @@
 {
   "cleanUrls": true,
+  "redirects": [
+    { "source": "/admin", "destination": "https://kopi-koffee-admin.vercel.app", "permanent": false },
+    { "source": "/cuisine", "destination": "https://kopi-koffee-admin.vercel.app", "permanent": false }
+  ],
   "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" },
-    { "source": "/cuisine", "destination": "/admin.html" },
     { "source": "/menu", "destination": "/index.html" },
     { "source": "/client", "destination": "/index.html" }
   ]
